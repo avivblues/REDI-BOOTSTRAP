@@ -1,0 +1,91 @@
+# =============================================================================
+# REDI LAB — Traefik Reverse Proxy
+# Deploy on redi-jkt-01 (primary edge). Dashboard bound to Tailscale IP only.
+# =============================================================================
+
+services:
+  docker-socket-proxy:
+    image: ${DOCKER_SOCKET_PROXY_IMAGE:-tecnativa/docker-socket-proxy:latest}
+    container_name: redi-docker-socket-proxy
+    restart: unless-stopped
+    networks:
+      - redi-proxy
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      SERVICES: 1
+      TASKS: 1
+      INFO: 1
+      EVENTS: 1
+      PING: 1
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2375/_ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  traefik:
+    image: ${TRAEFIK_IMAGE}
+    container_name: redi-traefik
+    restart: unless-stopped
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+    networks:
+      - redi-proxy
+      - redi-dns
+      - redi-management
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2222:2222"
+      - "${TRAEFIK_TAILSCALE_IP:-127.0.0.1}:8080:8080"
+    environment:
+      PDNS_API_URL: ${PDNS_API_URL}
+      PDNS_API_KEY: ${PDNS_API_KEY}
+      TRAEFIK_HOSTNAME: ${TRAEFIK_HOSTNAME}
+      REDI_ACME_EMAIL: ${REDI_ACME_EMAIL}
+    volumes:
+      - ${TRAEFIK_CONFIG_PATH}/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ${TRAEFIK_CONFIG_PATH}/dynamic:/etc/traefik/dynamic:ro
+      - ${TRAEFIK_CONFIG_PATH}/acme.json:/etc/traefik/acme.json
+      - ${TRAEFIK_CONFIG_PATH}/acme-http.json:/etc/traefik/acme-http.json
+      - ${TRAEFIK_LOG_PATH}:/var/log/traefik
+    labels:
+      - "traefik.enable=false"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  redi-proxy:
+    external: true
+  redi-dns:
+    external: true
+  redi-management:
+    external: true

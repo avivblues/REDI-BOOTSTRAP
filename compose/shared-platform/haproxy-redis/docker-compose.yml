@@ -1,0 +1,29 @@
+# REDI Shared Platform — HAProxy Redis Sentinel router (redi-internal :6379 → current master)
+services:
+  haproxy-redis:
+    image: ${HAPROXY_IMAGE}
+    container_name: redi-redis-haproxy
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    networks:
+      redi-internal:
+        aliases:
+          - redis.redi.internal
+          - redis
+    volumes:
+      - ${SHARED_CONFIG_PATH}/haproxy-redis.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    healthcheck:
+      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+networks:
+  redi-internal:
+    external: true

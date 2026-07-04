@@ -1,0 +1,52 @@
+# =============================================================================
+# REDI LAB — Traefik Dynamic Configuration: Middlewares
+# =============================================================================
+
+http:
+  middlewares:
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        sslRedirect: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow"
+          Server: ""
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1m
+
+    compress:
+      compress:
+        excludedContentTypes:
+          - text/event-stream
+
+    redirect-www:
+      redirectRegex:
+        regex: "^https://www\\.(.*)"
+        replacement: "https://${1}"
+        permanent: true
+
+    internal-only:
+      ipAllowList:
+        sourceRange:
+          - "100.64.0.0/10"
+          - "127.0.0.0/8"
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+          - "192.168.0.0/16"
+
+    dashboard-auth:
+      basicAuth:
+        users:
+          - "admin:$apr1$zI2Dp4d0$pryzNv6nT2X/epc.YfQ0X1"

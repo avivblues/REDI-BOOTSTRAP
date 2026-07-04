@@ -1,0 +1,76 @@
+# =============================================================================
+# REDI LAB — Traefik Static Configuration (redi-sby-01 edge node)
+# Sprint 3D — GeoDNS edge: SBY proxy → mjk backends via Tailscale mesh
+# =============================================================================
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  dashboard: true
+  insecure: false
+
+ping:
+  entryPoint: traefik
+
+log:
+  level: INFO
+  filePath: /var/log/traefik/traefik.log
+  format: json
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+  format: json
+  filters:
+    statusCodes:
+      - "400-599"
+
+entryPoints:
+  web:
+    address: ":80"
+
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: "letsredi.com"
+            sans:
+              - "*.letsredi.com"
+
+  traefik:
+    address: ":8080"
+
+  gitlab-ssh:
+    address: ":2222"
+
+providers:
+  docker:
+    endpoint: "tcp://docker-socket-proxy:2375"
+    exposedByDefault: false
+    network: redi-proxy
+    watch: true
+
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  # DNS-01 via PowerDNS API on jkt (accessible via Tailscale mesh from sby)
+  # PDNS_API_URL must point to http://100.79.82.92:8081 in .env
+  letsencrypt:
+    acme:
+      email: ops@letsredi.com
+      storage: /etc/traefik/acme.json
+      dnsChallenge:
+        provider: powerdns
+        delayBeforeCheck: 45s
+        resolvers:
+          - "ns1.letsredi.com:53"
+          - "ns2.letsredi.com:53"
+
+serversTransport:
+  insecureSkipVerify: false
+  maxIdleConnsPerHost: 100

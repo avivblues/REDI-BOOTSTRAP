@@ -1,0 +1,155 @@
+# =============================================================================
+# REDI Inventory — Network (EXAMPLE / TEMPLATE)
+# =============================================================================
+#
+# Schema version : 1.0
+# Production file: inventory/network.yaml  (gitignored)
+#
+# PURPOSE
+#   Defines network topology: Tailscale mesh, Docker bridge networks,
+#   colocation policy, firewall expectations, and internal connectivity rules.
+#
+# REQUIRED TOP-LEVEL KEYS
+#   schema_version  — must be "1.0"
+#   mesh            — private overlay network configuration
+#   docker_networks — list of Docker bridge networks
+#   connectivity    — inter-node reachability rules
+#
+# MESH BLOCK — REQUIRED FIELDS
+#   provider        — tailscale | wireguard | other
+#   cidr            — CIDR of mesh network (informational)
+#   hostname_source — inventory | machine  (how mesh hostnames are assigned)
+#
+# DOCKER_NETWORK OBJECT — REQUIRED FIELDS
+#   name            — Docker network name (must match compose files)
+#   subnet          — CIDR, must not overlap other docker_networks
+#   purpose         — short description
+#
+# CONNECTIVITY RULE — REQUIRED FIELDS
+#   from_tier       — source tier or role_ref
+#   to_tier         — destination tier or role_ref
+#   protocol        — tcp | udp | any
+#   ports           — list of port numbers or "mesh-only"
+#   via             — public | mesh | docker
+#
+# COLOCATION POLICY (optional top-level)
+#   allowed         — boolean
+#   pairs           — list of server id pairs permitted to colocate
+#
+# VALIDATION RULES
+#   - docker_networks[].subnet must not overlap
+#   - docker_networks[].name must be unique
+#   - mesh.provider must be documented before Stage 2 deployment
+#   - connectivity rules must not expose internal APIs on public via: public
+#   - If colocation allowed, pairs must reference valid server ids
+#
+# =============================================================================
+
+schema_version: "1.0"
+
+metadata:
+  description: "Example network topology — dummy values only"
+
+mesh:
+  provider: tailscale
+  cidr: 100.64.0.0/10                     # Tailscale CGNAT range (informational)
+  hostname_source: inventory              # use servers.yaml hostname in mesh
+  tags:
+    edge: "tag:edge"
+    management: "tag:management"
+  dns:
+    enabled: false                          # REDI uses self-hosted PowerDNS
+    override_local_dns: false
+
+docker_networks:
+  - name: redi-dns
+    subnet: 172.28.0.0/24
+    purpose: "PowerDNS authoritative and MariaDB backend"
+    attach_roles:
+      - role-edge-primary
+      - role-edge-secondary
+
+  - name: redi-proxy
+    subnet: 172.29.0.0/24
+    purpose: "Traefik reverse proxy and TLS termination"
+    attach_roles:
+      - role-edge-primary
+      - role-edge-secondary
+      - role-management
+
+  - name: redi-management
+    subnet: 172.30.0.0/24
+    purpose: "GitLab, Portainer, and management services"
+    attach_roles:
+      - role-management
+
+  - name: redi-monitoring
+    subnet: 172.31.0.0/24
+    purpose: "Prometheus, Grafana, Loki — Phase 2"
+    attach_roles:
+      - role-monitoring
+
+connectivity:
+  - from_tier: edge
+    to_tier: management
+    protocol: tcp
+    ports: [80, 443, 9000, 9443]
+    via: mesh
+    description: "Edge Traefik proxies to management services over mesh"
+
+  - from_tier: edge
+    to_tier: edge
+    protocol: tcp
+    ports: [3306, 8081]
+    via: mesh
+    description: "MariaDB replication and PowerDNS API between edge nodes"
+
+  - from_tier: management
+    to_tier: edge
+    protocol: tcp
+    ports: [8081]
+    via: mesh
+    description: "Traefik DNS-01 challenge via PowerDNS API"
+
+  - from_tier: any
+    to_tier: edge
+    protocol: tcp
+    ports: [53]
+    via: public
+    description: "Public DNS queries to authoritative servers"
+
+  - from_tier: any
+    to_tier: edge
+    protocol: tcp
+    ports: [80, 443]
+    via: public
+    description: "Public HTTPS to Traefik"
+
+colocation_policy:
+  allowed: false                            # set true only with explicit CTO approval
+  pairs: []
+  # Example if colocation is approved:
+  # pairs:
+  #   - [srv-edge-secondary-01, srv-mgmt-01]
+  notes: >
+    Each role should occupy a distinct server unless colocation_policy.allowed
+    is true and the pair is explicitly listed.
+
+firewall_expectations:
+  default_inbound: deny
+  default_outbound: allow
+  ssh_source: any                           # restrict to bastion CIDR in production
+  mesh_interface: tailscale0
+  public_services:
+    - port: 53
+      protocol: udp
+      roles: [role-edge-primary, role-edge-secondary]
+    - port: 53
+      protocol: tcp
+      roles: [role-edge-primary, role-edge-secondary]
+    - port: 80
+      protocol: tcp
+      roles: [role-edge-primary, role-edge-secondary]
+    - port: 443
+      protocol: tcp
+      roles: [role-edge-primary, role-edge-secondary]

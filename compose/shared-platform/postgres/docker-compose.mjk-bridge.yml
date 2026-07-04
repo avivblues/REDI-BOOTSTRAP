@@ -1,0 +1,47 @@
+# REDI — Spilo/Patroni on mjk (redi-internal bridge + mesh connect_address for DCS)
+services:
+  spilo:
+    image: ${SPILO_IMAGE}
+    container_name: redi-postgres
+    restart: unless-stopped
+    hostname: mjk-mesh
+    extra_hosts:
+      - "mjk-mesh:${NODE_MESH_IP}"
+    networks:
+      redi-internal:
+        aliases:
+          - redi-postgres
+          - spilo-mjk.redi.internal
+    ports:
+      - "${NODE_MESH_IP}:${POSTGRES_DIRECT_PORT:-5433}:5433"
+      - "${NODE_MESH_IP}:8008:8008"
+    environment:
+      SCOPE: ${POSTGRES_SCOPE}
+      ETCD3_HOSTS: ${ETCD3_HOSTS}
+      ETCD3_PROTOCOL: http
+      PGVERSION: "16"
+      PGPORT: ${POSTGRES_DIRECT_PORT:-5433}
+      PGPASSWORD_SUPERUSER: ${POSTGRES_SUPERUSER_PASSWORD}
+      PGPASSWORD_REPLICATION: ${POSTGRES_REPLICATION_PASSWORD}
+      PGUSER_SUPERUSER: ${POSTGRES_SUPERUSER}
+      DCS_ENABLE_KUBERNETES_API: "false"
+      PATRONI_POSTGRESQL_LISTEN: 0.0.0.0:${POSTGRES_DIRECT_PORT:-5433}
+      PATRONI_RESTAPI_LISTEN: 0.0.0.0:8008
+    volumes:
+      - ${SHARED_DATA_PATH}/postgres:/home/postgres/pgdata
+    shm_size: "256m"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER} -h 127.0.0.1 -p ${POSTGRES_DIRECT_PORT:-5433}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  redi-internal:
+    external: true

@@ -1,0 +1,32 @@
+# REDI Shared Platform — PostgreSQL replica (standby)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: redi-postgres
+    restart: unless-stopped
+    networks:
+      redi-internal:
+        aliases:
+          - postgres-replica.redi.internal
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${NODE_MESH_IP}:${POSTGRES_DIRECT_PORT:-5433}:5432"
+    volumes:
+      - ${SHARED_DATA_PATH}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  redi-internal:
+    external: true

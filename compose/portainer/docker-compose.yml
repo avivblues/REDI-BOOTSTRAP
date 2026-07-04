@@ -1,0 +1,41 @@
+# =============================================================================
+# REDI LAB — Portainer CE Server
+# Management server: redi-mjk-01 — agents on all nodes
+# =============================================================================
+
+services:
+  portainer:
+    image: ${PORTAINER_IMAGE}
+    container_name: redi-portainer
+    restart: unless-stopped
+    networks:
+      - redi-management
+      - redi-proxy
+    ports:
+      # 9443 explicit; 443 for https://portainer.letsredi.com (default HTTPS port)
+      - "${PORTAINER_TAILSCALE_IP:-127.0.0.1}:9443:9443"
+      - "${PORTAINER_TAILSCALE_IP:-127.0.0.1}:443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${PORTAINER_DATA_PATH}:/data
+    environment:
+      AGENT_SECRET: ${PORTAINER_AGENT_SECRET}
+    command:
+      - --http-disabled
+      - --admin-password
+      - ${PORTAINER_ADMIN_PASSWORD}
+    healthcheck:
+      disable: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  redi-management:
+    external: true
+  redi-proxy:
+    external: true

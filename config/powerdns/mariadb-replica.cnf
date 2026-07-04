@@ -1,0 +1,39 @@
+# =============================================================================
+# REDI LAB — MariaDB Replica Configuration
+# =============================================================================
+
+[mysqld]
+# Character set
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# Replication — Replica
+server-id = 2
+log_bin = /var/lib/mysql/mysql-bin
+binlog_format = ROW
+relay_log = /var/lib/mysql/relay-bin
+read_only = 1
+log_slave_updates = 1
+
+gtid_domain_id = 2
+
+# Performance tuning
+innodb_buffer_pool_size = 512M
+innodb_log_file_size = 128M
+innodb_flush_method = O_DIRECT
+max_connections = 200
+
+# Security
+bind-address = 0.0.0.0
+skip-name-resolve
+
+# Logging
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+
+[mysql]
+default-character-set = utf8mb4
+
+[client]
+default-character-set = utf8mb4

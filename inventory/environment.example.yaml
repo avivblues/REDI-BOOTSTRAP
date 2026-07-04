@@ -1,0 +1,85 @@
+# =============================================================================
+# REDI Inventory — Environment (EXAMPLE / COMMITTABLE)
+# =============================================================================
+#
+# Schema version : 1.0
+#
+# PURPOSE
+#   Global environment metadata, deployment phase, and file registry.
+#   Contains NO secrets.
+#
+# =============================================================================
+
+schema_version: "1.0"
+
+metadata:
+  description: "Example environment definition — non-sensitive metadata only"
+  spec_version: "RAS-1.0"
+
+project:
+  id: redi-lab-example
+  name: "REDI LAB (Example)"
+  environment: staging
+  owner: "platform-team@example.invalid"
+
+deployment:
+  current_phase: 1
+  permission_level: 0
+  repo_path: /opt/redi
+  install_order:
+    - stage-0-precheck
+    - stage-1-bootstrap
+    - stage-2-tailscale
+    - stage-3-powerdns
+    - stage-4-traefik
+    - stage-5-portainer
+    - stage-6-gitlab
+  constraints:
+    kubernetes: false
+    application_services: false
+    capture_os: false
+  approval:
+    required_for_level_1: true
+    approver_role: cto
+
+locale:
+  timezone: UTC
+  ntp_pools:
+    - 0.pool.ntp.org
+    - 1.pool.ntp.org
+
+logging:
+  level: info
+  retention_days: 30
+  centralised: false
+
+inventory:
+  path: inventory/
+  files:
+    servers: inventory/servers.example.yaml
+    roles: inventory/roles.example.yaml
+    domains: inventory/domains.example.yaml
+    network: inventory/network.example.yaml
+    storage: inventory/storage.example.yaml
+    environment: inventory/environment.example.yaml
+
+secrets:
+  path: secrets/
+  gitignored: true
+  files:
+    servers: secrets/servers.yaml
+    ssh: secrets/ssh.yaml
+    api_keys: secrets/api-keys.yaml
+    certificates: secrets/certificates.yaml
+
+reporting:
+  output_directory: "{repo_path}/reports"
+  required_reports:
+    - PRECHECK_REPORT.md
+    - BOOTSTRAP_REPORT.md
+    - NETWORK_REPORT.md
+    - POWERDNS_REPORT.md
+    - TRAEFIK_REPORT.md
+    - PORTAINER_REPORT.md
+    - GITLAB_REPORT.md
+    - DEPLOYMENT_REPORT.md

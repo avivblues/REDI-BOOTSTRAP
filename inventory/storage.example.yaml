@@ -1,0 +1,142 @@
+# =============================================================================
+# REDI Inventory — Storage (EXAMPLE / TEMPLATE)
+# =============================================================================
+#
+# Schema version : 1.0
+# Production file: inventory/storage.yaml  (gitignored)
+#
+# PURPOSE
+#   Declares persistent storage requirements per service and node: paths,
+#   minimum capacity, backup policy references, and retention.
+#
+# REQUIRED TOP-LEVEL KEYS
+#   schema_version  — must be "1.0"
+#   base_path       — root path for all REDI data on every node
+#   volumes         — list of volume definitions
+#   backup          — backup policy defaults
+#
+# VOLUME OBJECT — REQUIRED FIELDS
+#   id              — unique volume identifier
+#   service         — service name (matches compose/ directory)
+#   path            — absolute path relative to base_path or full path
+#   min_size_gb     — integer >= 1
+#   server_roles    — list of role_ref values that mount this volume
+#
+# VOLUME OBJECT — OPTIONAL FIELDS
+#   type            — bind | named | nfs  (default: bind)
+#   growth_rate     — low | medium | high
+#   backup_required — boolean
+#   encryption      — boolean
+#
+# BACKUP BLOCK — REQUIRED FIELDS
+#   schedule        — cron expression
+#   retention_days  — integer >= 1
+#   offsite         — boolean
+#
+# VALIDATION RULES
+#   - volumes[].id must be unique
+#   - volumes[].path must be under base_path unless type is nfs
+#   - server_roles entries must exist in roles.yaml
+#   - min_size_gb must meet or exceed servers.yaml os.min_disk_gb fractions
+#   - backup_required: true volumes must have documented restore procedure
+#
+# =============================================================================
+
+schema_version: "1.0"
+
+metadata:
+  description: "Example storage requirements — dummy values only"
+
+base_path: /opt/redi
+
+layout:
+  compose: "{base_path}/compose"
+  config: "{base_path}/config"
+  data: "{base_path}/data"
+  backup: "{base_path}/backup"
+  logs: "{base_path}/logs"
+  scripts: "{base_path}/scripts"
+
+volumes:
+  - id: vol-powerdns-mariadb-primary
+    service: powerdns
+    path: "{base_path}/data/powerdns/mariadb"
+    min_size_gb: 10
+    server_roles:
+      - role-edge-primary
+    type: bind
+    growth_rate: low
+    backup_required: true
+    encryption: false
+
+  - id: vol-powerdns-mariadb-replica
+    service: powerdns
+    path: "{base_path}/data/powerdns/mariadb"
+    min_size_gb: 10
+    server_roles:
+      - role-edge-secondary
+    type: bind
+    growth_rate: low
+    backup_required: true
+    encryption: false
+
+  - id: vol-traefik-acme
+    service: traefik
+    path: "{base_path}/config/traefik/acme.json"
+    min_size_gb: 1
+    server_roles:
+      - role-edge-primary
+      - role-edge-secondary
+    type: bind
+    growth_rate: low
+    backup_required: true
+    encryption: true
+    notes: "File permissions must be 0600"
+
+  - id: vol-traefik-logs
+    service: traefik
+    path: "{base_path}/logs/traefik"
+    min_size_gb: 5
+    server_roles:
+      - role-edge-primary
+      - role-edge-secondary
+    type: bind
+    growth_rate: medium
+    backup_required: false
+
+  - id: vol-portainer-data
+    service: portainer
+    path: "{base_path}/data/portainer"
+    min_size_gb: 2
+    server_roles:
+      - role-management
+    type: bind
+    growth_rate: low
+    backup_required: true
+
+  - id: vol-gitlab-data
+    service: gitlab
+    path: "{base_path}/data/gitlab"
+    min_size_gb: 50
+    server_roles:
+      - role-management
+    type: bind
+    growth_rate: high
+    backup_required: true
+    encryption: false
+    notes: >
+      Includes config/, logs/, and data/ subdirectories per GitLab Omnibus layout.
+
+backup:
+  schedule: "0 2 * * *"
+  retention_days: 30
+  offsite: true
+  destination_ref: backup-target-primary    # → secrets/ssh.yaml
+  scripts:
+    run: "{base_path}/scripts/backup/backup-all.sh"
+    restore_powerdns: "{base_path}/scripts/restore/restore-powerdns.sh"
+    restore_gitlab: "{base_path}/scripts/restore/restore-gitlab.sh"
+
+disk_thresholds:
+  warn_percent: 80
+  critical_percent: 90

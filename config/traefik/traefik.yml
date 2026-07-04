@@ -1,0 +1,84 @@
+# =============================================================================
+# REDI LAB — Traefik Static Configuration
+# =============================================================================
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  dashboard: true
+  insecure: false
+
+ping:
+  entryPoint: traefik
+
+log:
+  level: INFO
+  filePath: /var/log/traefik/traefik.log
+  format: json
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+  format: json
+  filters:
+    statusCodes:
+      - "400-599"
+
+entryPoints:
+  web:
+    address: ":80"
+    # No global HTTPS redirect — per-router middleware; keeps HTTP-01 + landing on :80
+
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: "redi.lab"
+            sans:
+              - "*.redi.lab"
+          - main: "letsredi.com"
+            sans:
+              - "*.letsredi.com"
+
+  traefik:
+    address: ":8080"
+
+  gitlab-ssh:
+    address: ":2222"
+
+providers:
+  docker:
+    endpoint: "tcp://docker-socket-proxy:2375"
+    exposedByDefault: false
+    network: redi-proxy
+    watch: true
+
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: ops@letsredi.com
+      storage: /etc/traefik/acme.json
+      dnsChallenge:
+        provider: powerdns
+        delayBeforeCheck: 30s
+        resolvers:
+          - "127.0.0.1:53"
+
+  # HTTP-01 for public apex hosts (letsredi.com landing) — no PowerDNS plugin required
+  letsencrypt-http:
+    acme:
+      email: ops@letsredi.com
+      storage: /etc/traefik/acme-http.json
+      httpChallenge:
+        entryPoint: web
+
+serversTransport:
+  insecureSkipVerify: false
+  maxIdleConnsPerHost: 100

@@ -1,0 +1,121 @@
+# =============================================================================
+# REDI LAB — GitLab CE Configuration
+# Mounted at /etc/gitlab/gitlab.rb
+# Optimized for memory-constrained management server
+# =============================================================================
+
+external_url '${GITLAB_EXTERNAL_URL}'
+
+# ---------------------------------------------------------------------------
+# NGINX — behind Traefik reverse proxy
+# ---------------------------------------------------------------------------
+nginx['listen_port'] = 80
+nginx['listen_https'] = false
+nginx['proxy_set_headers'] = {
+  "X-Forwarded-Proto" => "https",
+  "X-Forwarded-Ssl" => "on",
+  "X-Forwarded-For" => "$proxy_add_x_forwarded_for",
+  "Host" => "$http_host"
+}
+
+# ---------------------------------------------------------------------------
+# SSH — separate port for Git operations
+# ---------------------------------------------------------------------------
+gitlab_rails['gitlab_shell_ssh_port'] = 2222
+
+# ---------------------------------------------------------------------------
+# Disable Container Registry
+# ---------------------------------------------------------------------------
+registry['enable'] = false
+gitlab_rails['registry_enabled'] = false
+
+# ---------------------------------------------------------------------------
+# Disable GitLab Pages
+# ---------------------------------------------------------------------------
+gitlab_pages['enable'] = false
+pages_external_url nil
+
+# ---------------------------------------------------------------------------
+# Disable Mattermost
+# ---------------------------------------------------------------------------
+mattermost['enable'] = false
+
+# ---------------------------------------------------------------------------
+# Disable bundled monitoring (use external Prometheus in Phase 2)
+# ---------------------------------------------------------------------------
+prometheus_monitoring['enable'] = false
+prometheus['enable'] = false
+alertmanager['enable'] = false
+node_exporter['enable'] = false
+redis_exporter['enable'] = false
+postgres_exporter['enable'] = false
+gitlab_exporter['enable'] = false
+grafana['enable'] = false
+
+# ---------------------------------------------------------------------------
+# Memory optimization
+# ---------------------------------------------------------------------------
+puma['worker_processes'] = 2
+puma['min_threads'] = 1
+puma['max_threads'] = 4
+
+sidekiq['max_concurrency'] = 10
+
+postgresql['shared_buffers'] = "256MB"
+postgresql['max_connections'] = 100
+
+gitaly['configuration'] = {
+  concurrency: [
+    {
+      'rpc' => "/gitaly.SmartHTTPService/PostReceivePack",
+      'max_per_repo' => 3
+    },
+    {
+      'rpc' => "/gitaly.SSHService/SSHUploadPack",
+      'max_per_repo' => 3
+    }
+  ]
+}
+
+# ---------------------------------------------------------------------------
+# SMTP (optional)
+# ---------------------------------------------------------------------------
+if ENV['GITLAB_SMTP_ENABLED'] == 'true'
+  gitlab_rails['smtp_enable'] = true
+  gitlab_rails['smtp_address'] = ENV['GITLAB_SMTP_ADDRESS']
+  gitlab_rails['smtp_port'] = ENV['GITLAB_SMTP_PORT'].to_i
+  gitlab_rails['smtp_user_name'] = ENV['GITLAB_SMTP_USER']
+  gitlab_rails['smtp_password'] = ENV['GITLAB_SMTP_PASSWORD']
+  gitlab_rails['smtp_domain'] = ENV['GITLAB_SMTP_DOMAIN']
+  gitlab_rails['smtp_authentication'] = ENV['GITLAB_SMTP_AUTHENTICATION']
+  gitlab_rails['smtp_enable_starttls_auto'] = ENV['GITLAB_SMTP_STARTTLS'] == 'true'
+else
+  gitlab_rails['smtp_enable'] = false
+end
+
+# ---------------------------------------------------------------------------
+# Security
+# ---------------------------------------------------------------------------
+gitlab_rails['gitlab_default_can_create_group'] = false
+gitlab_rails['gitlab_username_changing_enabled'] = false
+gitlab_rails['password_authentication_enabled_for_web'] = true
+gitlab_rails['password_authentication_enabled_for_git'] = true
+
+# Session timeout (8 hours)
+gitlab_rails['session_expire_delay'] = 480
+
+# ---------------------------------------------------------------------------
+# Backup
+# ---------------------------------------------------------------------------
+gitlab_rails['backup_keep_time'] = 604800
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging['log_level'] = 'info'
+
+# ---------------------------------------------------------------------------
+# Timezone
+# ---------------------------------------------------------------------------
+gitlab_rails['time_zone'] = 'Asia/Jakarta'

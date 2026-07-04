@@ -1,0 +1,41 @@
+# REDI Shared Platform — PostgreSQL HA (Spilo + Patroni, host network for mesh IPs)
+services:
+  spilo:
+    image: ${SPILO_IMAGE}
+    container_name: redi-postgres
+    restart: unless-stopped
+    hostname: ${ETCD_NODE_NAME}
+    network_mode: host
+    extra_hosts:
+      - "${ETCD_NODE_NAME}:${NODE_MESH_IP}"
+    environment:
+      SCOPE: ${POSTGRES_SCOPE}
+      ETCD3_HOSTS: ${ETCD3_HOSTS}
+      ETCD3_PROTOCOL: http
+      PGVERSION: "16"
+      PGPORT: ${POSTGRES_DIRECT_PORT:-5433}
+      PGPASSWORD_SUPERUSER: ${POSTGRES_SUPERUSER_PASSWORD}
+      PGPASSWORD_REPLICATION: ${POSTGRES_REPLICATION_PASSWORD}
+      PGUSER_SUPERUSER: ${POSTGRES_SUPERUSER}
+      DCS_ENABLE_KUBERNETES_API: "false"
+      PG_CONNECT_ADDRESS: ${NODE_MESH_IP}:${POSTGRES_DIRECT_PORT:-5433}
+      RESTAPI_CONNECT_ADDRESS: ${NODE_MESH_IP}:8008
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: ${NODE_MESH_IP}:${POSTGRES_DIRECT_PORT:-5433}
+      PATRONI_RESTAPI_CONNECT_ADDRESS: ${NODE_MESH_IP}:8008
+      PATRONI_POSTGRESQL_LISTEN: 0.0.0.0:${POSTGRES_DIRECT_PORT:-5433}
+      PATRONI_RESTAPI_LISTEN: 0.0.0.0:8008
+      PGHBA: host replication all 0.0.0.0/0 md5, host replication all 0.0.0.0/0 scram-sha-256, host all all 0.0.0.0/0 md5, host all all 0.0.0.0/0 scram-sha-256
+    volumes:
+      - ${SHARED_DATA_PATH}/postgres:/home/postgres/pgdata
+    shm_size: "256m"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER} -h 127.0.0.1 -p ${POSTGRES_DIRECT_PORT:-5433}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"

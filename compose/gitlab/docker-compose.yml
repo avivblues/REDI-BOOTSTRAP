@@ -1,0 +1,217 @@
+# =============================================================================
+# REDI — GitLab Enterprise Edition (external shared platform services)
+# Free tier — no license | Management: redi-mjk-01
+# =============================================================================
+
+services:
+  gitlab:
+    image: ${GITLAB_IMAGE}
+    container_name: redi-gitlab
+    restart: unless-stopped
+    hostname: ${GITLAB_DOMAIN}
+    networks:
+      - redi-management
+      - redi-internal
+    ports:
+      - "${GITLAB_SSH_BIND:-0.0.0.0}:${GITLAB_SSH_PORT}:22"
+      - "${GITLAB_TAILSCALE_IP:-127.0.0.1}:${GITLAB_HTTP_PORT}:80"
+      - "${GITLAB_TAILSCALE_IP:-127.0.0.1}:${GITLAB_REGISTRY_PORT}:5000"
+      - "${GITLAB_TAILSCALE_IP:-127.0.0.1}:8075:8075"
+    shm_size: "256m"
+    extra_hosts:
+      - "minio.redi.internal:host-gateway"
+      - "redis.redi.internal:${REDI_INTERNAL_GATEWAY:-172.32.0.1}"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '${GITLAB_EXTERNAL_URL}'
+        registry_external_url '${GITLAB_REGISTRY_URL}'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        nginx['redirect_http_to_https'] = false
+        registry_nginx['redirect_http_to_https'] = false
+        nginx['listen_addresses'] = ['*']
+        nginx['proxy_set_headers'] = {
+          "X-Forwarded-Proto" => "https",
+          "X-Forwarded-Ssl" => "on",
+          "X-Forwarded-For" => "$$proxy_add_x_forwarded_for",
+          "Host" => "$$http_host"
+        }
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        
+        # PostgreSQL HA via local PgBouncer (resolves via redi-internal alias)
+        postgresql['enable'] = false
+        gitlab_rails['db_adapter'] = 'postgresql'
+        gitlab_rails['db_encoding'] = 'unicode'
+        gitlab_rails['db_host'] = 'postgres.redi.internal'
+        gitlab_rails['db_port'] = 5432
+        gitlab_rails['db_username'] = 'gitlab'
+        gitlab_rails['db_password'] = '${GITLAB_DB_PASSWORD}'
+        gitlab_rails['db_database'] = 'gitlabhq_production'
+        
+        # Redis HA via Sentinel
+        redis['enable'] = false
+        redis['master_name'] = 'redi-master'
+        gitlab_rails['sentinel_password'] = '${REDIS_PASSWORD}'
+        
+        mjk_sentinel = ('${GITLAB_TAILSCALE_IP}' == '${MJK_MESH_IP}') ? '${REDI_INTERNAL_GATEWAY:-172.32.0.1}' : '${MJK_MESH_IP}'
+        jkt_sentinel = ('${GITLAB_TAILSCALE_IP}' == '${JKT_MESH_IP}') ? '${REDI_INTERNAL_GATEWAY:-172.32.0.1}' : '${JKT_MESH_IP}'
+        sby_sentinel = ('${GITLAB_TAILSCALE_IP}' == '${SBY_MESH_IP}') ? '${REDI_INTERNAL_GATEWAY:-172.32.0.1}' : '${SBY_MESH_IP}'
+
+        gitlab_rails['redis_sentinels'] = [
+          {'host' => mjk_sentinel, 'port' => 26379},
+          {'host' => jkt_sentinel, 'port' => 26379},
+          {'host' => sby_sentinel, 'port' => 26379}
+        ]
+        gitlab_rails['redis_master_name'] = 'redi-master'
+        gitlab_rails['redis_cache_master_name'] = 'redi-master'
+        gitlab_rails['redis_queues_master_name'] = 'redi-master'
+        gitlab_rails['redis_shared_state_master_name'] = 'redi-master'
+        gitlab_rails['redis_actioncable_master_name'] = 'redi-master'
+        gitlab_rails['redis_trace_chunks_master_name'] = 'redi-master'
+        gitlab_rails['redis_rate_limiting_master_name'] = 'redi-master'
+        gitlab_rails['redis_sessions_master_name'] = 'redi-master'
+        gitlab_rails['redis_password'] = '${REDIS_PASSWORD}'
+        
+        gitlab_workhorse['redis_sentinels'] = [
+          {'host' => mjk_sentinel, 'port' => 26379},
+          {'host' => jkt_sentinel, 'port' => 26379},
+          {'host' => sby_sentinel, 'port' => 26379}
+        ]
+        gitlab_workhorse['redis_master_name'] = 'redi-master'
+        gitlab_workhorse['redis_password'] = '${REDIS_PASSWORD}'
+
+        # Shared MinIO Object Storage
+        gitlab_rails['object_store']['enabled'] = true
+        gitlab_rails['object_store']['proxy_download'] = true
+        gitlab_rails['object_store']['connection'] = {
+          'provider' => 'AWS',
+          'region' => 'us-east-1',
+          'endpoint' => 'http://minio.redi.internal:9000',
+          'path_style' => true,
+          'aws_access_key_id' => '${MINIO_ROOT_USER}',
+          'aws_secret_access_key' => '${MINIO_ROOT_PASSWORD}'
+        }
+        gitlab_rails['object_store']['objects']['artifacts']['bucket'] = 'gitlab-artifacts'
+        gitlab_rails['object_store']['objects']['external_diffs']['bucket'] = 'gitlab-mr-diffs'
+        gitlab_rails['object_store']['objects']['lfs']['bucket'] = 'gitlab-lfs'
+        gitlab_rails['object_store']['objects']['uploads']['bucket'] = 'gitlab-uploads'
+        gitlab_rails['object_store']['objects']['packages']['bucket'] = 'gitlab-packages'
+        gitlab_rails['object_store']['objects']['dependency_proxy']['bucket'] = 'gitlab-dep-proxy'
+        gitlab_rails['object_store']['objects']['terraform_state']['bucket'] = 'gitlab-terraform'
+        gitlab_rails['object_store']['objects']['ci_secure_files']['bucket'] = 'gitlab-ci-secure-files'
+        
+        # Gitaly HA Configuration (Omnibus GitLab >= 16.0)
+        gitaly['enable'] = true
+        
+        # Define storage name dynamically based on node identity
+        if '${GITLAB_TAILSCALE_IP}' == '${MJK_MESH_IP}'
+          gitaly_storage_name = 'gitaly-mjk'
+        elsif '${GITLAB_TAILSCALE_IP}' == '${JKT_MESH_IP}'
+          gitaly_storage_name = 'gitaly-jkt'
+        else
+          gitaly_storage_name = 'gitaly-sby'
+        end
+
+        gitaly['configuration'] = {
+          listen_addr: '0.0.0.0:8075',
+          auth: {
+            token: 'gitaly_cluster_token_secret_123'
+          },
+          storage: [
+            {
+              name: gitaly_storage_name,
+              path: '/var/opt/gitlab/git-data/repositories'
+            }
+          ]
+        }
+
+        # GitLab Rails connects to local Praefect
+        git_data_dirs({
+          'default' => {
+            'gitaly_address' => 'tcp://127.0.0.1:2305',
+            'gitaly_token' => 'praefect_token_secret_123'
+          }
+        })
+        
+        # Praefect Configuration (Omnibus GitLab >= 16.0)
+        praefect['enable'] = true
+        
+        mjk_gitaly_addr = ('${GITLAB_TAILSCALE_IP}' == '${MJK_MESH_IP}') ? 'tcp://127.0.0.1:8075' : 'tcp://${MJK_MESH_IP}:8075'
+        jkt_gitaly_addr = ('${GITLAB_TAILSCALE_IP}' == '${JKT_MESH_IP}') ? 'tcp://127.0.0.1:8075' : 'tcp://${JKT_MESH_IP}:8075'
+        sby_gitaly_addr = ('${GITLAB_TAILSCALE_IP}' == '${SBY_MESH_IP}') ? 'tcp://127.0.0.1:8075' : 'tcp://${SBY_MESH_IP}:8075'
+
+        praefect['configuration'] = {
+          listen_addr: '0.0.0.0:2305',
+          auth: {
+            token: 'praefect_token_secret_123'
+          },
+          database: {
+            host: 'postgres.redi.internal',
+            port: 5432,
+            user: 'praefect',
+            password: 'praefect_db_password_123',
+            dbname: 'praefect_production',
+            sslmode: 'disable'
+          },
+          virtual_storage: [
+            {
+              name: 'default',
+              node: [
+                {
+                  storage: 'gitaly-mjk',
+                  address: mjk_gitaly_addr,
+                  token: 'gitaly_cluster_token_secret_123'
+                },
+                {
+                  storage: 'gitaly-jkt',
+                  address: jkt_gitaly_addr,
+                  token: 'gitaly_cluster_token_secret_123'
+                },
+                {
+                  storage: 'gitaly-sby',
+                  address: sby_gitaly_addr,
+                  token: 'gitaly_cluster_token_secret_123'
+                }
+              ]
+            }
+          ]
+        }
+        
+        registry['enable'] = true
+        gitlab_rails['registry_enabled'] = true
+        registry['registry_http_addr'] = "0.0.0.0:5000"
+        registry_nginx['enable'] = false
+        
+        gitlab_pages['enable'] = false
+        mattermost['enable'] = false
+        gitlab_kas['enable'] = false
+        prometheus_monitoring['enable'] = false
+        prometheus['enable'] = false
+        gitlab_rails['time_zone'] = 'Asia/Jakarta'
+        gitlab_rails['gitlab_default_can_create_group'] = false
+    volumes:
+      - ${GITLAB_DATA_PATH}/config:/etc/gitlab
+      - ${GITLAB_DATA_PATH}/logs:/var/log/gitlab
+      - ${GITLAB_DATA_PATH}/data:/var/opt/gitlab
+    deploy:
+      resources:
+        limits:
+          memory: ${GITLAB_MEMORY_LIMIT}
+          cpus: "${GITLAB_CPU_LIMIT}"
+    healthcheck:
+      test: ["CMD", "/opt/gitlab/bin/gitlab-healthcheck", "--fail", "--max-time", "10"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 900s
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  redi-management:
+    external: true
+  redi-internal:
+    external: true

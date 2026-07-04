@@ -1,0 +1,44 @@
+# =============================================================================
+# REDI Shared Platform — MinIO distributed (sby — 3 drives)
+# Sprint 3E rev2: 9-drive cluster (3 drives × 3 nodes) — EC:3+3
+# Server args must be IDENTICAL to mjk and jkt
+# =============================================================================
+
+services:
+  minio:
+    image: ${MINIO_IMAGE}
+    container_name: redi-minio
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SITE_NAME: redi-cluster
+    command: >
+      server
+      http://${MJK_MESH_IP}:9002/data1
+      http://${MJK_MESH_IP}:9002/data2
+      http://${MJK_MESH_IP}:9002/data3
+      http://${JKT_MESH_IP}:9002/data1
+      http://${JKT_MESH_IP}:9002/data2
+      http://${JKT_MESH_IP}:9002/data3
+      http://${SBY_MESH_IP}:9002/data1
+      http://${SBY_MESH_IP}:9002/data2
+      http://${SBY_MESH_IP}:9002/data3
+      --address ":9002"
+      --console-address ":9004"
+    volumes:
+      - ${SHARED_DATA_PATH}/minio/data1:/data1
+      - ${SHARED_DATA_PATH}/minio/data2:/data2
+      - ${SHARED_DATA_PATH}/minio/data3:/data3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"

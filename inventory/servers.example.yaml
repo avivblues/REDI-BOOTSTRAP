@@ -1,0 +1,70 @@
+# =============================================================================
+# REDI Inventory — Servers (production node map)
+# =============================================================================
+# Non-sensitive metadata only. Connection data → secrets/servers.yaml
+# =============================================================================
+
+schema_version: "1.0"
+
+metadata:
+  description: "REDI LAB production node inventory — 3 VPS"
+  maintainer: "platform-team"
+  last_reviewed: "2026-06-29"
+
+servers:
+  # ---------------------------------------------------------------------------
+  # VPS 1 — Jakarta (Edge Primary)
+  # ---------------------------------------------------------------------------
+  - id: redi-jkt-01
+    hostname: redi-jkt-01
+    role_ref: role-edge-primary
+    site: jakarta
+    status: active
+    secrets_ref: redi-jkt-01
+    labels:
+      tier: edge
+      region: jkt
+    os:
+      distribution: ubuntu
+      version: "22.04"
+      min_vcpu: 2
+      min_memory_gb: 4
+      min_disk_gb: 40
+
+  # ---------------------------------------------------------------------------
+  # VPS 2 — Surabaya (Edge Secondary)
+  # ---------------------------------------------------------------------------
+  - id: redi-sby-01
+    hostname: redi-sby-01
+    role_ref: role-edge-secondary
+    site: surabaya
+    status: active
+    secrets_ref: redi-sby-01
+    labels:
+      tier: edge
+      region: sby
+    os:
+      distribution: ubuntu
+      version: "22.04"
+      min_vcpu: 2
+      min_memory_gb: 4
+      min_disk_gb: 40
+
+  # ---------------------------------------------------------------------------
+  # VPS 3 — Mojokerto (Management Plane)
+  # ---------------------------------------------------------------------------
+  - id: redi-mjk-01
+    hostname: redi-mjk-01
+    role_ref: role-management
+    site: mojokerto
+    status: active
+    secrets_ref: redi-mjk-01
+    labels:
+      tier: management
+      region: mjk
+    os:
+      distribution: ubuntu
+      version: "22.04"
+      min_vcpu: 4
+      min_memory_gb: 8
+      min_disk_gb: 100

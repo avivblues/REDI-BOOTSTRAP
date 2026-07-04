@@ -1,0 +1,37 @@
+# =============================================================================
+# REDI — Traefik: Authentik on redi-mjk-01
+# =============================================================================
+
+http:
+  serversTransports:
+    authentik-transport:
+      forwardingTimeouts:
+        dialTimeout: 30s
+        responseHeaderTimeout: 120s
+
+  routers:
+    authentik:
+      rule: "Host(`auth.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: authentik
+      middlewares:
+        - security-headers@file
+        - rate-limit@file
+      tls:
+        certResolver: letsencrypt-http
+
+    authentik-http:
+      rule: "Host(`auth.letsredi.com`)"
+      entryPoints:
+        - web
+      service: authentik
+      middlewares:
+        - security-headers@file
+
+  services:
+    authentik:
+      loadBalancer:
+        servers:
+          - url: "http://100.81.86.37:9100"
+        serversTransport: authentik-transport

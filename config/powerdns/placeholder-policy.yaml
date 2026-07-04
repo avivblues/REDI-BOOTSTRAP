@@ -1,0 +1,104 @@
+# =============================================================================
+# REDI LAB — DNS Placeholder Policy (Task 008C — canonical)
+# =============================================================================
+# public_platform  → CNAME placeholder.letsredi.com
+# internal_platform → A {internal_placeholder} (mjk mesh — not public gateway)
+# lab              → do not modify
+# production       → do not modify
+# =============================================================================
+
+zone: letsredi.com
+ttl: 3600
+
+targets:
+  gateway_cname: proxy.letsredi.com
+  internal_placeholder: "100.81.86.37"
+  placeholder_host: placeholder.letsredi.com
+
+# Anchor record for undeployed public services
+anchor:
+  name: placeholder.letsredi.com
+  type: CNAME
+  value: proxy.letsredi.com
+  ttl: 3600
+  note: "Public placeholder landing — resolves via REDI Gateway"
+
+production:
+  - letsredi.com
+  - www.letsredi.com
+  - ns1.letsredi.com
+  - ns2.letsredi.com
+  - dns.letsredi.com
+  - proxy.letsredi.com
+  - mesh.letsredi.com
+  - gateway.letsredi.com
+  - api.letsredi.com
+  - ops.letsredi.com
+  - portainer.letsredi.com
+  - status.letsredi.com
+  - traefik-jkt.letsredi.com
+  - traefik-sby.letsredi.com
+
+lab:
+  - jkt.lab.letsredi.com
+  - sby.lab.letsredi.com
+  - mjk.lab.letsredi.com
+
+public_platform:
+  - git.letsredi.com
+  - registry.letsredi.com
+  - auth.letsredi.com
+  - apps.letsredi.com
+  - runtime.letsredi.com
+  - capture.letsredi.com
+  - knowledge.letsredi.com
+  - graph.letsredi.com
+  - search.letsredi.com
+  - docs.letsredi.com
+  - taxonomy.letsredi.com
+  - objects.letsredi.com
+  - ai.letsredi.com
+  - agents.letsredi.com
+  - studio.letsredi.com
+  - flow.letsredi.com
+  - llm.letsredi.com
+  - models.letsredi.com
+  - prompt.letsredi.com
+  - storage.letsredi.com
+  - queue.letsredi.com
+  - events.letsredi.com
+  - cloud.letsredi.com
+  - console.letsredi.com
+  - billing.letsredi.com
+  - marketplace.letsredi.com
+  - customer.letsredi.com
+  - dev.letsredi.com
+  - staging.letsredi.com
+  - sandbox.letsredi.com
+  - test.letsredi.com
+  - webhook.letsredi.com
+  - integration.letsredi.com
+
+internal_platform:
+  - postgres.letsredi.com
+  - redis.letsredi.com
+  - neo4j.letsredi.com
+  - qdrant.letsredi.com
+  - minio.letsredi.com
+  - mongodb.letsredi.com
+  - mariadb.letsredi.com
+  - vault.letsredi.com
+  - runner.letsredi.com
+  - prometheus.letsredi.com
+  - grafana.letsredi.com
+  - loki.letsredi.com
+  - mqtt.letsredi.com
+  - nats.letsredi.com
+  - monitor.letsredi.com
+  - logs.letsredi.com
+  - uptime.letsredi.com
+  - security.letsredi.com
+  - ca.letsredi.com
+  - pki.letsredi.com
+  - secret.letsredi.com
+  - kms.letsredi.com

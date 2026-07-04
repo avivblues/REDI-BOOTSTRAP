@@ -1,0 +1,69 @@
+# =============================================================================
+# REDI — Authentik Identity Platform (shared PostgreSQL + Redis)
+# =============================================================================
+
+services:
+  authentik-server:
+    image: ${AUTHENTIK_IMAGE}
+    container_name: redi-authentik-server
+    restart: unless-stopped
+    command: server
+    networks:
+      - redi-internal
+      - redi-management
+    ports:
+      - "${AUTHENTIK_TAILSCALE_IP}:9100:9000"
+    extra_hosts:
+      - "minio.redi.internal:host-gateway"
+      - "redis.redi.internal:${REDI_INTERNAL_GATEWAY:-172.32.0.1}"
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_POSTGRESQL__HOST: postgres.redi.internal
+      AUTHENTIK_POSTGRESQL__PORT: 5432
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+      AUTHENTIK_REDIS__HOST: redis.redi.internal
+      AUTHENTIK_REDIS__PORT: 6379
+      AUTHENTIK_REDIS__PASSWORD: ${REDIS_PASSWORD}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+    volumes:
+      - ${AUTHENTIK_DATA_PATH}/media:/media
+      - ${AUTHENTIK_DATA_PATH}/templates:/templates
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9000/-/health/ready/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  authentik-worker:
+    image: ${AUTHENTIK_IMAGE}
+    container_name: redi-authentik-worker
+    restart: unless-stopped
+    command: worker
+    networks:
+      - redi-internal
+    extra_hosts:
+      - "minio.redi.internal:host-gateway"
+      - "redis.redi.internal:${REDI_INTERNAL_GATEWAY:-172.32.0.1}"
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_POSTGRESQL__HOST: postgres.redi.internal
+      AUTHENTIK_POSTGRESQL__PORT: 5432
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+      AUTHENTIK_REDIS__HOST: redis.redi.internal
+      AUTHENTIK_REDIS__PORT: 6379
+      AUTHENTIK_REDIS__PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ${AUTHENTIK_DATA_PATH}/media:/media
+      - ${AUTHENTIK_DATA_PATH}/templates:/templates
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  redi-internal:
+    external: true
+  redi-management:
+    external: true

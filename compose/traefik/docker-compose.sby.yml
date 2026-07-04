@@ -1,0 +1,15 @@
+# =============================================================================
+# REDI LAB — Traefik SBY override
+# Sprint 3D — GeoDNS edge: mount sby-specific static config
+# Usage: docker compose -f docker-compose.yml -f docker-compose.sby.yml up -d
+# =============================================================================
+
+services:
+  traefik:
+    volumes:
+      # Override static config with sby variant
+      - ${TRAEFIK_CONFIG_PATH}/traefik.sby.yml:/etc/traefik/traefik.yml:ro
+      - ${TRAEFIK_CONFIG_PATH}/dynamic:/etc/traefik/dynamic:ro
+      - ${TRAEFIK_CONFIG_PATH}/acme-sby.json:/etc/traefik/acme.json
+      - ${TRAEFIK_LOG_PATH}:/var/log/traefik
+    container_name: redi-traefik-sby

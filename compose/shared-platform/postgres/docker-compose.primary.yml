@@ -1,0 +1,53 @@
+# REDI Shared Platform — PostgreSQL primary (redi-mjk-01)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: redi-postgres
+    restart: unless-stopped
+    networks:
+      redi-internal:
+        aliases:
+          - postgres.redi.internal
+          - postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${NODE_MESH_IP}:5432:5432"
+    volumes:
+      - ${SHARED_DATA_PATH}/postgres:/var/lib/postgresql/data
+      - ${SHARED_DATA_PATH}/postgres-wal-archive:/wal_archive
+      - ${SHARED_CONFIG_PATH}/postgres/init-primary.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - hot_standby=on
+      - -c
+      - archive_mode=on
+      - -c
+      - "archive_command=test ! -f /wal_archive/%f && cp %p /wal_archive/%f"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  redi-internal:
+    external: true

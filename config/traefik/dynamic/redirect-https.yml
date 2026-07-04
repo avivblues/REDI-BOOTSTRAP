@@ -1,0 +1,10 @@
+# =============================================================================
+# REDI LAB — Optional HTTPS redirect (apply per-router, not global entrypoint)
+# =============================================================================
+
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="REDI LAB — Infrastructure platform status and service navigation" />
+  <title>REDI LAB — letsredi.com</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark">R</div>
+        <div>
+          <h1>REDI LAB</h1>
+          <p class="tagline">Infrastructure Operations Platform</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <div id="overall-badge" class="badge badge-loading">Checking…</div>
+        <button type="button" id="refresh-btn" class="btn-ghost" title="Refresh status">↻ Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel" aria-labelledby="nodes-heading">
+      <div class="panel-head">
+        <h2 id="nodes-heading">Host Status</h2>
+        <span id="probe-time" class="muted mono"></span>
+      </div>
+      <div id="nodes-grid" class="nodes-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="failover-heading">
+      <div class="panel-head">
+        <h2 id="failover-heading">Failover &amp; Active Role</h2>
+        <p class="muted">Primary / secondary routing per REDI topology</p>
+      </div>
+      <div id="failover-table-wrap" class="table-wrap">
+        <table class="failover-table">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Primary</th>
+              <th>Secondary</th>
+              <th>Active</th>
+            </tr>
+          </thead>
+          <tbody id="failover-body">
+            <tr><td colspan="4" class="muted">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="services-heading">
+      <div class="panel-head">
+        <h2 id="services-heading">Service Directory</h2>
+        <div class="filters">
+          <input type="search" id="service-search" placeholder="Search services…" aria-label="Search services" />
+          <select id="status-filter" aria-label="Filter by status">
+            <option value="all">All</option>
+            <option value="production">Live</option>
+            <option value="placeholder">Planned</option>
+          </select>
+        </div>
+      </div>
+      <div id="services-root"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>REDI LAB · RAS v1.0 · <span id="footer-ts" class="mono">—</span></p>
+  </footer>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

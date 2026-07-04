@@ -1,0 +1,38 @@
+# REDI Shared Platform — etcd (DCS for PostgreSQL Patroni/Spilo)
+services:
+  etcd:
+    image: ${ETCD_IMAGE}
+    container_name: redi-etcd
+    restart: unless-stopped
+    networks:
+      - redi-internal
+    environment:
+      ETCD_NAME: ${ETCD_NODE_NAME}
+      ETCD_DATA_DIR: /etcd-data
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://${NODE_MESH_IP}:2379
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://${NODE_MESH_IP}:2380
+      ETCD_INITIAL_CLUSTER: ${ETCD_INITIAL_CLUSTER}
+      ETCD_INITIAL_CLUSTER_STATE: ${ETCD_CLUSTER_STATE:-new}
+      ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_CLUSTER_TOKEN}
+    ports:
+      - "${NODE_MESH_IP}:2379:2379"
+      - "${NODE_MESH_IP}:2380:2380"
+    volumes:
+      - ${SHARED_DATA_PATH}/etcd:/etcd-data
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+networks:
+  redi-internal:
+    external: true

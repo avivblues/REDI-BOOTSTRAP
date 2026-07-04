@@ -1,0 +1,20 @@
+# Local TCP proxy: redi-internal bridge -> Spilo/Patroni REST on host (avoids Tailscale hairpin on mjk)
+services:
+  pg-local-proxy:
+    image: alpine:3.19
+    container_name: redi-pg-local-proxy
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - sh
+      - -c
+      - |
+        apk add --no-cache socat >/dev/null
+        socat TCP-LISTEN:5434,bind=172.32.0.1,fork,reuseaddr TCP:127.0.0.1:5433 &
+        socat TCP-LISTEN:8009,bind=172.32.0.1,fork,reuseaddr TCP:127.0.0.1:8008 &
+        wait
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"

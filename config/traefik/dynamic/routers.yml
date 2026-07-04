@@ -1,0 +1,14 @@
+# =============================================================================
+# REDI LAB — Traefik Dynamic Configuration: Routers
+# =============================================================================
+
+http:
+  routers:
+    traefik-dashboard:
+      rule: "Host(`__TRAEFIK_DASHBOARD_HOST__`)"
+      entryPoints:
+        - traefik
+      service: api@internal
+      middlewares:
+        - dashboard-auth@file
+        - internal-only@file

@@ -1,0 +1,21 @@
+# =============================================================================
+# REDI LAB — Traefik Dynamic Configuration: File Provider Probe
+# Validates file provider without deploying application services.
+# =============================================================================
+
+http:
+  routers:
+    gateway-file-probe:
+      rule: "Host(`gateway-probe.redi.lab`)"
+      entryPoints:
+        - traefik
+      service: gateway-file-probe
+      middlewares:
+        - internal-only@file
+      priority: 100
+
+  services:
+    gateway-file-probe:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8080/ping"

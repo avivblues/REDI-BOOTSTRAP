@@ -1,0 +1,134 @@
+# =============================================================================
+# REDI Inventory — Domains (EXAMPLE / TEMPLATE)
+# =============================================================================
+#
+# Schema version : 1.0
+# Production file: inventory/domains.yaml  (gitignored)
+#
+# PURPOSE
+#   Declares DNS zones, public hostnames, ACME configuration, and name server
+#   delegation. Used by PowerDNS and Traefik deployment scripts.
+#
+# REQUIRED TOP-LEVEL KEYS
+#   schema_version  — must be "1.0"
+#   base_domain     — apex domain object
+#   records         — list of DNS record definitions
+#   acme            — Let's Encrypt / certificate configuration
+#
+# BASE_DOMAIN — REQUIRED FIELDS
+#   name            — apex FQDN (trailing dot optional)
+#   ttl             — default TTL in seconds (integer > 0)
+#
+# RECORD OBJECT — REQUIRED FIELDS
+#   name            — relative or FQDN hostname
+#   type            — A | AAAA | CNAME | NS | MX | TXT
+#   value           — record content (dummy in example file)
+#   ttl             — integer > 0
+#
+# RECORD OBJECT — OPTIONAL FIELDS
+#   server_ref      — servers.yaml id that hosts this record target
+#   service_ref     — logical service name (gitlab, portainer, traefik, etc.)
+#   proxied         — boolean; traffic via Traefik
+#
+# ACME BLOCK — REQUIRED FIELDS
+#   email           — contact for certificate authority
+#   challenge       — dns-01 | http-01 | tls-alpn-01
+#   dns_provider    — required when challenge is dns-01 (e.g. powerdns)
+#
+# VALIDATION RULES
+#   - base_domain.name must be valid FQDN
+#   - NS records must point to declared name servers
+#   - server_ref values must exist in servers.yaml
+#   - No duplicate record name + type combinations
+#   - acme.email must be valid email format
+#   - Service hostnames referenced in compose labels must exist here
+#
+# =============================================================================
+
+schema_version: "1.0"
+
+metadata:
+  description: "Example domain inventory — dummy values only"
+  registrar: "example-registrar.invalid"
+
+base_domain:
+  name: example.invalid                    # RFC 2606 reserved domain
+  ttl: 3600
+
+name_servers:
+  - hostname: ns1.example.invalid
+    server_ref: srv-edge-primary-01
+  - hostname: ns2.example.invalid
+    server_ref: srv-edge-secondary-01
+
+acme:
+  email: ops@example.invalid
+  challenge: dns-01
+  dns_provider: powerdns
+  staging: false                           # set true for LE staging environment
+
+records:
+  # Apex and name servers
+  - name: example.invalid
+    type: NS
+    value: ns1.example.invalid
+    ttl: 3600
+
+  - name: example.invalid
+    type: NS
+    value: ns2.example.invalid
+    ttl: 3600
+
+  - name: ns1.example.invalid
+    type: A
+    value: 203.0.113.10                    # dummy — real IP in secrets/servers.yaml
+    ttl: 300
+    server_ref: srv-edge-primary-01
+
+  - name: ns2.example.invalid
+    type: A
+    value: 203.0.113.11
+    ttl: 300
+    server_ref: srv-edge-secondary-01
+
+  # Edge Traefik dashboards (internal via Tailscale or restricted access)
+  - name: traefik-primary.example.invalid
+    type: A
+    value: 203.0.113.10
+    ttl: 300
+    server_ref: srv-edge-primary-01
+    service_ref: traefik
+    proxied: true
+
+  - name: traefik-secondary.example.invalid
+    type: A
+    value: 203.0.113.11
+    ttl: 300
+    server_ref: srv-edge-secondary-01
+    service_ref: traefik
+    proxied: true
+
+  # Management services (routed via edge Traefik)
+  - name: gitlab.example.invalid
+    type: A
+    value: 203.0.113.20
+    ttl: 300
+    server_ref: srv-mgmt-01
+    service_ref: gitlab
+    proxied: true
+
+  - name: portainer.example.invalid
+    type: A
+    value: 203.0.113.20
+    ttl: 300
+    server_ref: srv-mgmt-01
+    service_ref: portainer
+    proxied: true
+
+  # Wildcard — optional; document policy before enabling in production
+  - name: "*.example.invalid"
+    type: A
+    value: 203.0.113.10
+    ttl: 300
+    server_ref: srv-edge-primary-01
+    proxied: true

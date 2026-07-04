@@ -1,0 +1,94 @@
+# =============================================================================
+# REDI LAB — Traefik: GitLab CE on redi-mjk-01 (cross-host via mesh)
+# Sprint 2 Stage 1 — git.letsredi.com + registry.letsredi.com
+# =============================================================================
+
+http:
+  serversTransports:
+    gitlab-transport:
+      forwardingTimeouts:
+        dialTimeout: 30s
+        responseHeaderTimeout: 300s
+
+  routers:
+    gitlab:
+      rule: "Host(`git.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: gitlab
+      middlewares:
+        - security-headers@file
+        - rate-limit@file
+      tls:
+        certResolver: letsencrypt-http
+
+    gitlab-http:
+      rule: "Host(`git.letsredi.com`)"
+      entryPoints:
+        - web
+      service: gitlab
+      middlewares:
+        - security-headers@file
+
+    gitlab-registry:
+      rule: "Host(`registry.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: gitlab-registry
+      middlewares:
+        - security-headers@file
+        - rate-limit@file
+      tls:
+        certResolver: letsencrypt-http
+
+    gitlab-registry-http:
+      rule: "Host(`registry.letsredi.com`)"
+      entryPoints:
+        - web
+      service: gitlab-registry
+      middlewares:
+        - security-headers@file
+
+  services:
+    gitlab:
+      loadBalancer:
+        sticky:
+          cookie:
+            name: _gitlab_session_sticky
+        servers:
+          - url: "http://100.81.86.37:8929" # MJK
+          - url: "http://100.79.82.92:8929" # JKT
+          - url: "http://100.67.138.25:8929" # SBY
+        serversTransport: gitlab-transport
+        healthCheck:
+          path: /users/sign_in
+          interval: 15s
+          timeout: 3s
+
+    gitlab-registry:
+      loadBalancer:
+        servers:
+          - url: "http://100.81.86.37:5000" # MJK
+          - url: "http://100.79.82.92:5000" # JKT
+          - url: "http://100.67.138.25:5000" # SBY
+        serversTransport: gitlab-transport
+        healthCheck:
+          path: /
+          interval: 15s
+          timeout: 3s
+
+tcp:
+  routers:
+    gitlab-ssh:
+      entryPoints:
+        - gitlab-ssh
+      rule: "HostSNI(`*`)"
+      service: gitlab-ssh
+
+  services:
+    gitlab-ssh:
+      loadBalancer:
+        servers:
+          - address: "100.81.86.37:2223" # MJK
+          - address: "100.79.82.92:2223" # JKT
+          - address: "100.67.138.25:2223" # SBY

@@ -1,0 +1,20 @@
+# =============================================================================
+# REDI LAB — PowerDNS GeoDNS overlay (Sprint 3D)
+# Usage (on jkt ONLY):
+#   docker compose -f docker-compose.yml -f docker-compose.geodns.yml up -d --build
+# =============================================================================
+
+services:
+  pdns-auth:
+    # Override with custom image that includes lua-mmdb
+    build:
+      context: .
+      dockerfile: Dockerfile.geodns
+      args:
+        PDNS_IMAGE: ${PDNS_IMAGE:-powerdns/pdns-auth-48:latest}
+    image: redi-pdns-auth-geodns:latest
+    # Mount GeoLite2-City mmdb into container
+    volumes:
+      - ${PDNS_CONFIG_PATH}/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - ${PDNS_LOG_PATH}/pdns:/var/log/pdns
+      - ${PDNS_CONFIG_PATH}/geoip:/etc/powerdns/geoip:ro

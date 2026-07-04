@@ -1,0 +1,69 @@
+{
+  "categories": [
+    {
+      "id": "infrastructure",
+      "title": "Infrastructure",
+      "icon": "⬡",
+      "services": [
+        { "name": "REDI Gateway", "host": "gateway.letsredi.com", "url": "https://gateway.letsredi.com", "status": "production", "note": "Traefik edge primary" },
+        { "name": "API Gateway", "host": "api.letsredi.com", "url": "https://api.letsredi.com", "status": "production", "note": "Public API ingress" },
+        { "name": "DNS", "host": "dns.letsredi.com", "url": "https://dns.letsredi.com", "status": "production", "note": "PowerDNS primary" },
+        { "name": "Mesh Entry", "host": "mesh.letsredi.com", "url": "https://mesh.letsredi.com", "status": "production", "note": "Tailscale mesh (VPN required)", "mesh": true }
+      ]
+    },
+    {
+      "id": "operations",
+      "title": "Operations",
+      "icon": "◈",
+      "services": [
+        { "name": "Operations Hub", "host": "ops.letsredi.com", "url": "https://ops.letsredi.com", "status": "production", "note": "Portainer operations", "mesh": true },
+        { "name": "Portainer", "host": "portainer.letsredi.com", "url": "https://portainer.letsredi.com", "status": "production", "note": "Container management", "mesh": true },
+        { "name": "Status", "host": "status.letsredi.com", "url": "https://status.letsredi.com", "status": "production", "note": "This dashboard" }
+      ]
+    },
+    {
+      "id": "management",
+      "title": "Management Platform",
+      "icon": "▣",
+      "services": [
+        { "name": "GitLab", "host": "git.letsredi.com", "url": "https://git.letsredi.com", "status": "placeholder" },
+        { "name": "Registry", "host": "registry.letsredi.com", "url": "https://registry.letsredi.com", "status": "placeholder" },
+        { "name": "Auth", "host": "auth.letsredi.com", "url": "https://auth.letsredi.com", "status": "placeholder", "note": "Authentik" }
+      ]
+    },
+    {
+      "id": "observability",
+      "title": "Observability",
+      "icon": "◎",
+      "services": [
+        { "name": "Monitor", "host": "monitor.letsredi.com", "url": "https://monitor.letsredi.com", "status": "placeholder" },
+        { "name": "Grafana", "host": "grafana.letsredi.com", "url": "https://grafana.letsredi.com", "status": "placeholder" },
+        { "name": "Prometheus", "host": "prometheus.letsredi.com", "url": "https://prometheus.letsredi.com", "status": "placeholder" },
+        { "name": "Loki", "host": "loki.letsredi.com", "url": "https://loki.letsredi.com", "status": "placeholder" },
+        { "name": "Uptime", "host": "uptime.letsredi.com", "url": "https://uptime.letsredi.com", "status": "placeholder" },
+        { "name": "Logs", "host": "logs.letsredi.com", "url": "https://logs.letsredi.com", "status": "placeholder" }
+      ]
+    },
+    {
+      "id": "runtime",
+      "title": "Runtime",
+      "icon": "⬢",
+      "services": [
+        { "name": "Apps", "host": "apps.letsredi.com", "url": "https://apps.letsredi.com", "status": "placeholder" },
+        { "name": "Runtime", "host": "runtime.letsredi.com", "url": "https://runtime.letsredi.com", "status": "placeholder" }
+      ]
+    },
+    {
+      "id": "ai",
+      "title": "AI Platform",
+      "icon": "✦",
+      "services": [
+        { "name": "AI", "host": "ai.letsredi.com", "url": "https://ai.letsredi.com", "status": "placeholder" },
+        { "name": "Agents", "host": "agents.letsredi.com", "url": "https://agents.letsredi.com", "status": "placeholder" },
+        { "name": "Studio", "host": "studio.letsredi.com", "url": "https://studio.letsredi.com", "status": "placeholder" },
+        { "name": "Flow", "host": "flow.letsredi.com", "url": "https://flow.letsredi.com", "status": "placeholder" },
+        { "name": "LLM", "host": "llm.letsredi.com", "url": "https://llm.letsredi.com", "status": "placeholder" }
+      ]
+    }
+  ]
+}

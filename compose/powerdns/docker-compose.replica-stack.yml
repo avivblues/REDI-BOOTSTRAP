@@ -1,0 +1,85 @@
+# =============================================================================
+# REDI LAB — PowerDNS Replica Stack (MariaDB slave + PowerDNS)
+# Deploy on redi-sby-01 — schema/data seeded via setup-mariadb-replication.sh
+# =============================================================================
+
+services:
+  mariadb:
+    image: ${MARIADB_IMAGE}
+    container_name: redi-mariadb
+    restart: unless-stopped
+    networks:
+      - redi-dns
+    ports:
+      - "${PDNS_TAILSCALE_IP:-127.0.0.1}:3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+    volumes:
+      - ${PDNS_DATA_PATH}/mariadb:/var/lib/mysql
+      - ${PDNS_CONFIG_PATH}/mariadb-replica.cnf:/etc/mysql/conf.d/redi.cnf:ro
+      - ${PDNS_LOG_PATH}/mariadb:/var/log/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  pdns-auth:
+    image: ${PDNS_IMAGE}
+    container_name: redi-pdns-auth
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - redi-dns
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "${PDNS_TAILSCALE_IP:-127.0.0.1}:${PDNS_WEBSERVER_PORT}:8081"
+    environment:
+      MARIADB_PDNS_USER: ${MARIADB_PDNS_USER}
+      MARIADB_PDNS_PASSWORD: ${MARIADB_PDNS_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      PDNS_API_KEY: ${PDNS_API_KEY}
+      PDNS_WEBSERVER_ADDRESS: ${PDNS_WEBSERVER_ADDRESS}
+      PDNS_WEBSERVER_PORT: ${PDNS_WEBSERVER_PORT}
+      PDNS_WEBSERVER_ALLOW_FROM: ${PDNS_WEBSERVER_ALLOW_FROM}
+      PDNS_HOSTNAME: ${PDNS_HOSTNAME}
+      PDNS_SOA_RNAME: ${PDNS_SOA_RNAME}
+      PDNS_SOA_REFRESH: ${PDNS_SOA_REFRESH}
+      PDNS_SOA_RETRY: ${PDNS_SOA_RETRY}
+      PDNS_SOA_EXPIRE: ${PDNS_SOA_EXPIRE}
+      PDNS_SOA_MINIMUM: ${PDNS_SOA_MINIMUM}
+    volumes:
+      - ${PDNS_CONFIG_PATH}/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - ${PDNS_LOG_PATH}/pdns:/var/log/pdns
+    healthcheck:
+      test: ["CMD-SHELL", "pdns_control rping || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_add:
+      - NET_BIND_SERVICE
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  redi-dns:
+    external: true

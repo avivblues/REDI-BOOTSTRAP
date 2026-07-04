@@ -1,0 +1,16 @@
+[databases]
+# HAProxy on redi-internal docker network (bridge cannot hairpin to host/Tailscale)
+* = host=${PGROUTER_HOST} port=5432
+
+[pgbouncer]
+listen_addr = 0.0.0.0
+listen_port = 5432
+auth_type = scram-sha-256
+auth_file = /etc/pgbouncer/userlist.txt
+auth_query = SELECT usename, passwd FROM pg_shadow WHERE usename=$1
+auth_user = postgres
+pool_mode = transaction
+max_client_conn = 500
+default_pool_size = 25
+admin_users = postgres
+ignore_startup_parameters = extra_float_digits

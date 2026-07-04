@@ -1,0 +1,43 @@
+# Secrets — never commit sensitive operational data
+**/.env
+!**/.env.example
+
+# Operator-populated secret material (never commit)
+secrets/servers.yaml
+secrets/ssh.yaml
+secrets/api-keys.yaml
+secrets/certificates.yaml
+secrets/*.local.yaml
+secrets/*.env
+secrets/*.key
+secrets/*.pem
+secrets/*.crt
+secrets/*.p12
+secrets/*.pfx
+secrets/acme.json
+
+# Legacy
+inventory/servers.env
+
+# Runtime data
+data/
+logs/
+backup/*.tar.gz
+backup/*.sql
+backup/*.dump
+
+# ACME certificates on target servers
+config/traefik/acme.json
+
+# Tailscale state
+config/tailscale/*.key
+
+# OS artifacts
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Editor
+.idea/
+.vscode/

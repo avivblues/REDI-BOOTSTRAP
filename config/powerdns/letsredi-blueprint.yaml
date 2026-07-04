@@ -1,0 +1,471 @@
+# =============================================================================
+# REDI LAB — letsredi.com DNS Blueprint (canonical policy)
+# Placeholder classification: config/powerdns/placeholder-policy.yaml (Task 008C)
+# Public placeholders → CNAME placeholder.letsredi.com
+# Internal placeholders → A {mjk_mesh}
+# =============================================================================
+
+zone: letsredi.com
+default_ttl: 3600
+
+targets:
+  jkt_public: "103.149.238.98"
+  sby_public: "103.80.214.144"
+  jkt_mesh: "100.79.82.92"
+  sby_mesh: "100.67.138.25"
+  mjk_mesh: "100.81.86.37"
+  gateway_public: "103.149.238.98"
+  gateway_cname: "proxy.letsredi.com"
+  placeholder_cname: "placeholder.letsredi.com"
+
+records:
+  # --- Placeholder anchor (Task 008C) ---
+  - name: placeholder.letsredi.com
+    type: CNAME
+    value: proxy.letsredi.com
+    ttl: 3600
+    status: production
+    note: "Public placeholder landing — undeployed services"
+
+  # --- Infrastructure (glue: never overwrite if present) ---
+  - name: ns1.letsredi.com
+    type: A
+    value: "{jkt_public}"
+    ttl: 3600
+    status: glue-do-not-touch
+    note: "Primary NS glue"
+
+  - name: ns2.letsredi.com
+    type: A
+    value: "{sby_public}"
+    ttl: 3600
+    status: glue-do-not-touch
+    note: "Secondary NS glue"
+
+  - name: dns.letsredi.com
+    type: CNAME
+    value: ns1.letsredi.com
+    ttl: 3600
+    status: production
+    note: "PowerDNS primary"
+
+  - name: proxy.letsredi.com
+    type: CNAME
+    value: traefik-jkt.letsredi.com
+    ttl: 3600
+    status: production
+    note: "REDI Gateway (Traefik primary)"
+
+  - name: mesh.letsredi.com
+    type: A
+    value: "{jkt_mesh}"
+    ttl: 3600
+    status: production
+    note: "Mesh entry (Tailscale primary)"
+
+  - name: gateway.letsredi.com
+    type: CNAME
+    value: proxy.letsredi.com
+    ttl: 3600
+    status: production
+    note: "REDI Gateway alias"
+
+  # --- Management ---
+  - name: git.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER — GitLab not deployed"
+
+  - name: registry.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER — registry not deployed"
+
+  - name: ops.letsredi.com
+    type: CNAME
+    value: portainer.letsredi.com
+    ttl: 3600
+    status: production
+    note: "Operations (Portainer)"
+
+  - name: portainer.letsredi.com
+    type: A
+    value: "{mjk_mesh}"
+    ttl: 3600
+    status: existing-do-not-touch
+    note: "Portainer server — mesh only"
+
+  - name: auth.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER — Authentik not deployed"
+
+  - name: vault.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER — Vault not deployed"
+
+  - name: runner.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER — CI runner not deployed"
+
+  # --- Knowledge ---
+  - name: capture.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: knowledge.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: graph.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: search.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: docs.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: taxonomy.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: objects.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- AI ---
+  - name: ai.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: agents.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: studio.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: flow.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: llm.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: models.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: prompt.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- Runtime ---
+  - name: api.letsredi.com
+    type: CNAME
+    value: traefik-jkt.letsredi.com
+    ttl: 3600
+    status: existing-do-not-touch
+    note: "API gateway via Traefik"
+  - name: apps.letsredi.com
+    type: CNAME
+    value: proxy.letsredi.com
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: runtime.letsredi.com
+    type: CNAME
+    value: proxy.letsredi.com
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: storage.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: queue.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: events.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- Data Platform ---
+  - name: postgres.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: redis.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: neo4j.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: qdrant.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: minio.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: mongodb.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: mariadb.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- Observability ---
+  - name: grafana.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: prometheus.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: loki.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: uptime.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: monitor.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: logs.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: status.letsredi.com
+    type: CNAME
+    value: proxy.letsredi.com
+    ttl: 3600
+    status: production
+    note: "Infrastructure status (landing)"
+
+  # --- Security ---
+  - name: security.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: ca.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: pki.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: secret.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: kms.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- Integration ---
+  - name: nats.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: mqtt.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: webhook.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: integration.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- Cloud ---
+  - name: cloud.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: console.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: billing.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: marketplace.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: customer.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- Development ---
+  - name: dev.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: staging.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: sandbox.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+  - name: test.letsredi.com
+    type: A
+    value: "{gateway_public}"
+    ttl: 3600
+    status: placeholder
+    note: "PLACEHOLDER"
+
+  # --- LAB (node mesh endpoints) ---
+  - name: jkt.lab.letsredi.com
+    type: A
+    value: "{jkt_mesh}"
+    ttl: 3600
+    status: production
+    note: "LAB — Jakarta edge mesh"
+  - name: sby.lab.letsredi.com
+    type: A
+    value: "{sby_mesh}"
+    ttl: 3600
+    status: production
+    note: "LAB — Surabaya edge mesh"
+  - name: mjk.lab.letsredi.com
+    type: A
+    value: "{mjk_mesh}"
+    ttl: 3600
+    status: production
+    note: "LAB — Mojokerto management mesh"

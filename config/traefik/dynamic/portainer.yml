@@ -1,0 +1,28 @@
+# =============================================================================
+# REDI LAB — Traefik Dynamic Configuration: Portainer (cross-host via mesh)
+# Routed on edge Traefik; backend is Portainer server on management node
+# =============================================================================
+
+http:
+  serversTransports:
+    portainer-transport:
+      insecureSkipVerify: true
+
+  routers:
+    portainer:
+      rule: "Host(`portainer.letsredi.com`) || Host(`ops.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: portainer
+      middlewares:
+        - security-headers@file
+        - rate-limit@file
+        - internal-only@file
+      # TLS via default websecure cert; mesh-only hosts cannot use public ACME
+
+  services:
+    portainer:
+      loadBalancer:
+        servers:
+          - url: "https://100.81.86.37:9443"
+        serversTransport: portainer-transport

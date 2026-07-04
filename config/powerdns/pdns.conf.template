@@ -1,0 +1,80 @@
+# PowerDNS Authoritative — REDI LAB
+# Template: rendered by deploy-powerdns.sh via envsubst
+
+#################################
+# Launch                        #
+#################################
+daemon=no
+guardian=no
+setuid=pdns
+setgid=pdns
+
+#################################
+# Logging                       #
+#################################
+log-dns-details=no
+log-dns-queries=no
+loglevel=4
+
+#################################
+# Performance                   #
+#################################
+receiver-threads=2
+cache-ttl=20
+query-cache-ttl=20
+negquery-cache-ttl=60
+
+#################################
+# Backend — Generic MySQL       #
+#################################
+launch=gmysql
+gmysql-host=${MARIADB_HOST}
+gmysql-port=3306
+gmysql-user=${MARIADB_PDNS_USER}
+gmysql-password=${MARIADB_PDNS_PASSWORD}
+gmysql-dbname=${MARIADB_DATABASE}
+gmysql-dnssec=yes
+
+#################################
+# API                           #
+#################################
+api=yes
+api-key=${PDNS_API_KEY}
+webserver=yes
+webserver-address=${PDNS_WEBSERVER_ADDRESS}
+webserver-port=${PDNS_WEBSERVER_PORT}
+webserver-allow-from=${PDNS_WEBSERVER_ALLOW_FROM}
+webserver-password=
+webserver-max-bodysize=2
+
+#################################
+# Security                      #
+#################################
+allow-axfr-ips=100.64.0.0/10
+allow-notify-from=100.64.0.0/10,127.0.0.0/8
+disable-axfr=no
+version-string=anonymous
+
+#################################
+# DNSSEC                        #
+#################################
+default-soa-content=${PDNS_HOSTNAME}. ${PDNS_SOA_RNAME} ${PDNS_SOA_REFRESH} ${PDNS_SOA_RETRY} ${PDNS_SOA_EXPIRE} ${PDNS_SOA_MINIMUM}
+
+#################################
+# Networking                    #
+#################################
+local-address=0.0.0.0
+local-port=53
+
+#################################
+# GeoDNS — Lua Records          #
+# Sprint 3D                     #
+#################################
+# Enable Lua record evaluation (geoiplookup2 requires lua-mmdb in image)
+enable-lua-records=yes
+# Max Lua ops per evaluation (0 = unlimited; 1000 is safe for geo logic)
+lua-records-exec-limit=1000
+# ECS forwarding — pass client subnet to upstream resolvers
+# Enables bestwho() to return actual client IP instead of resolver IP
+edns-subnet-processing=yes
+

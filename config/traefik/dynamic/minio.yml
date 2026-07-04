@@ -1,0 +1,75 @@
+# =============================================================================
+# REDI LAB — Traefik: MinIO distributed cluster (Sprint 3E)
+# Console UI  → https://minio.letsredi.com      (port 9003 → Traefik 443)
+# S3 API      → https://s3.letsredi.com         (port 9000 → Traefik 443)
+#
+# Load balancing: round-robin ke mjk + jkt + sby
+# Failover: Traefik health check — remove unhealthy node otomatis
+# =============================================================================
+
+http:
+  routers:
+    # MinIO Web Console
+    minio-console:
+      rule: "Host(`minio.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: minio-console
+      middlewares:
+        - security-headers@file
+      tls:
+        certResolver: letsencrypt-http
+
+    minio-console-http:
+      rule: "Host(`minio.letsredi.com`)"
+      entryPoints:
+        - web
+      service: minio-console
+      middlewares:
+        - redirect-to-https@file
+
+    # MinIO S3 API
+    minio-s3:
+      rule: "Host(`s3.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: minio-s3
+      middlewares:
+        - security-headers@file
+      tls:
+        certResolver: letsencrypt-http
+
+    minio-s3-http:
+      rule: "Host(`s3.letsredi.com`)"
+      entryPoints:
+        - web
+      service: minio-s3
+      middlewares:
+        - redirect-to-https@file
+
+  services:
+    # Console UI — port 9003 — round robin semua node
+    minio-console:
+      loadBalancer:
+        healthCheck:
+          path: /minio/health/live
+          port: 9000
+          interval: 10s
+          timeout: 5s
+        servers:
+          - url: "http://100.81.86.37:9003"   # mjk
+          - url: "http://100.79.82.92:9003"   # jkt
+          - url: "http://100.67.138.25:9003"  # sby
+
+    # S3 API — port 9000 — round robin semua node + health check
+    minio-s3:
+      loadBalancer:
+        healthCheck:
+          path: /minio/health/live
+          port: 9000
+          interval: 10s
+          timeout: 5s
+        servers:
+          - url: "http://100.81.86.37:9000"   # mjk
+          - url: "http://100.79.82.92:9000"   # jkt
+          - url: "http://100.67.138.25:9000"  # sby

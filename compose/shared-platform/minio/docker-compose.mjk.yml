@@ -1,0 +1,58 @@
+# =============================================================================
+# REDI Shared Platform — MinIO distributed (mjk — 3 drives)
+# Sprint 3E rev2: 9-drive cluster (3 drives × 3 nodes) — EC:3+3
+#
+# Cluster layout (9 drives total):
+#   http://MJK:9000/data1  (mjk drive 1)
+#   http://MJK:9000/data2  (mjk drive 2)
+#   http://MJK:9000/data3  (mjk drive 3)
+#   http://JKT:9000/data1  (jkt drive 1)
+#   http://JKT:9000/data2  (jkt drive 2)
+#   http://JKT:9000/data3  (jkt drive 3)
+#   http://SBY:9000/data1  (sby drive 1)
+#   http://SBY:9000/data2  (sby drive 2)
+#   http://SBY:9000/data3  (sby drive 3)
+#
+# Erasure: EC:3+3 (parity=3) — cluster survives loss of ANY 1 full node
+#          mjk bukan lagi SPOF (hanya 3 dari 9 drives)
+# All nodes run IDENTICAL server args (only volume mounts differ)
+# =============================================================================
+
+services:
+  minio:
+    image: ${MINIO_IMAGE}
+    container_name: redi-minio
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SITE_NAME: redi-cluster
+    command: >
+      server
+      http://${MJK_MESH_IP}:9002/data1
+      http://${MJK_MESH_IP}:9002/data2
+      http://${MJK_MESH_IP}:9002/data3
+      http://${JKT_MESH_IP}:9002/data1
+      http://${JKT_MESH_IP}:9002/data2
+      http://${JKT_MESH_IP}:9002/data3
+      http://${SBY_MESH_IP}:9002/data1
+      http://${SBY_MESH_IP}:9002/data2
+      http://${SBY_MESH_IP}:9002/data3
+      --address ":9002"
+      --console-address ":9004"
+    volumes:
+      - ${SHARED_DATA_PATH}/minio/data1:/data1
+      - ${SHARED_DATA_PATH}/minio/data2:/data2
+      - ${SHARED_DATA_PATH}/minio/data3:/data3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"

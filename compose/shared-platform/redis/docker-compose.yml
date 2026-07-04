@@ -1,0 +1,94 @@
+# REDI Shared Platform — Redis (master or replica per node role)
+# Profiles: host-sentinel (mjk) | bridge-sentinel (jkt/sby)
+x-sentinel-base: &sentinel-base
+  image: ${REDIS_IMAGE}
+  container_name: redi-redis-sentinel
+  restart: unless-stopped
+  depends_on:
+    redis:
+      condition: service_healthy
+  environment:
+    REDIS_PASSWORD: ${REDIS_PASSWORD}
+    REDIS_MASTER_HOST: ${REDIS_MASTER_HOST}
+    REDIS_MASTER_PORT: ${REDIS_MASTER_PORT}
+    NODE_MESH_IP: ${NODE_MESH_IP}
+  entrypoint: ["/bin/sh", "-c"]
+  command:
+    - |
+      until redis-cli -h "$$REDIS_MASTER_HOST" -a "$$REDIS_PASSWORD" ping 2>/dev/null | grep -q PONG; do sleep 2; done
+      printf '%s\n' \
+        'port 26379' \
+        "sentinel monitor redi-master $$REDIS_MASTER_HOST $$REDIS_MASTER_PORT 2" \
+        "sentinel auth-pass redi-master $$REDIS_PASSWORD" \
+        'sentinel down-after-milliseconds redi-master 5000' \
+        'sentinel failover-timeout redi-master 60000' \
+        "sentinel announce-ip $$NODE_MESH_IP" \
+        'sentinel announce-port 26379' \
+        > /data/sentinel.conf
+      exec redis-sentinel /data/sentinel.conf
+  volumes:
+    - ${SHARED_DATA_PATH}/redis-sentinel:/data
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "3"
+
+services:
+  redis:
+    image: ${REDIS_IMAGE}
+    container_name: redi-redis
+    restart: unless-stopped
+    networks:
+      - redi-internal
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ "$$REDIS_ROLE" = "replica" ]; then
+          exec redis-server --requirepass "$$REDIS_PASSWORD" --masterauth "$$REDIS_PASSWORD" \
+            --replicaof "$$REDIS_MASTER_HOST" "$$REDIS_MASTER_PORT" \
+            --replica-announce-ip "$$NODE_MESH_IP" --replica-announce-port 6379 \
+            --appendonly yes --dir /data
+        else
+          exec redis-server --requirepass "$$REDIS_PASSWORD" --masterauth "$$REDIS_PASSWORD" \
+            --appendonly yes --dir /data
+        fi
+    ports:
+      - "${NODE_MESH_IP}:6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_ROLE: ${REDIS_ROLE}
+      REDIS_MASTER_HOST: ${REDIS_MASTER_HOST}
+      REDIS_MASTER_PORT: ${REDIS_MASTER_PORT}
+      NODE_MESH_IP: ${NODE_MESH_IP}
+    volumes:
+      - ${SHARED_DATA_PATH}/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  sentinel:
+    <<: *sentinel-base
+    profiles: ["bridge-sentinel"]
+    networks:
+      redi-internal:
+        aliases:
+          - redis-sentinel.redi.internal
+    ports:
+      - "${NODE_MESH_IP}:26379:26379"
+
+  sentinel-host:
+    <<: *sentinel-base
+    profiles: ["host-sentinel"]
+    network_mode: host
+
+networks:
+  redi-internal:
+    external: true

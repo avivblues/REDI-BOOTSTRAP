@@ -1,0 +1,32 @@
+global
+  log stdout format raw local0
+  maxconn 4096
+
+defaults
+  log global
+  mode tcp
+  timeout connect 5s
+  timeout client  30m
+  timeout server  30m
+
+# MinIO S3 API (Port 9000)
+listen minio-s3
+  bind 0.0.0.0:9000
+  mode tcp
+  # TCP check is reliable and avoids HTTP 400 Bad Request from MinIO S3 API
+  default-server inter 3s fall 3 rise 2
+  server mjk ${MJK_MESH_IP}:9002 check
+  server jkt ${JKT_MESH_IP}:9002 check
+  server sby ${SBY_MESH_IP}:9002 check
+
+# MinIO Console (Port 9003)
+listen minio-console
+  bind 0.0.0.0:9003
+  mode tcp
+  balance roundrobin
+  option httpchk GET /
+  http-check expect status 200
+  default-server inter 3s fall 3 rise 2
+  server mjk ${MJK_MESH_IP}:9004 check
+  server jkt ${JKT_MESH_IP}:9004 check
+  server sby ${SBY_MESH_IP}:9004 check

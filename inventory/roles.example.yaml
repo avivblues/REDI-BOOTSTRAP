@@ -1,0 +1,128 @@
+# =============================================================================
+# REDI Inventory — Roles (EXAMPLE / TEMPLATE)
+# =============================================================================
+#
+# Schema version : 1.0
+# Production file: inventory/roles.yaml  (gitignored)
+#
+# PURPOSE
+#   Defines logical infrastructure roles: which services run where, deployment
+#   phase, and constraints. Referenced by servers.yaml via role_ref.
+#
+# REQUIRED TOP-LEVEL KEYS
+#   schema_version  — must be "1.0"
+#   roles           — non-empty list of role objects
+#
+# ROLE OBJECT — REQUIRED FIELDS
+#   id              — unique role identifier (kebab-case)
+#   name            — human-readable name
+#   tier            — edge | management | monitoring | storage
+#   phase           — integer deployment phase (1 = bootstrap infra)
+#   services        — list of service ids (strings, match compose/ directory names)
+#
+# ROLE OBJECT — OPTIONAL FIELDS
+#   description     — free text
+#   constraints     — deployment constraints block
+#   depends_on      — list of role ids that must be deployed first
+#   exclusive       — boolean; if true, only one server may hold this role
+#
+# CONSTRAINTS BLOCK (optional)
+#   requires_public_ip    — boolean
+#   exposes_http          — boolean
+#   exposes_dns           — boolean
+#   colocation_allowed    — boolean; may share host with another role
+#
+# VALIDATION RULES
+#   - roles[].id must be unique
+#   - roles[].services entries must map to known compose stacks in repository
+#   - depends_on references must exist in roles[]
+#   - tier must be one of: edge, management, monitoring, storage
+#   - phase must be positive integer
+#   - If exclusive: true, at most one server may reference this role_ref
+#
+# =============================================================================
+
+schema_version: "1.0"
+
+metadata:
+  description: "Example role definitions — dummy values only"
+  phase_scope: "Phase 1 — Infrastructure Bootstrap"
+
+roles:
+  - id: role-edge-primary
+    name: "Edge Primary"
+    tier: edge
+    phase: 1
+    description: >
+      Primary authoritative DNS, MariaDB master, and reverse proxy edge.
+    services:
+      - powerdns
+      - traefik
+    constraints:
+      requires_public_ip: true
+      exposes_http: true
+      exposes_dns: true
+      colocation_allowed: false
+    depends_on: []
+    exclusive: true
+
+  - id: role-edge-secondary
+    name: "Edge Secondary"
+    tier: edge
+    phase: 1
+    description: >
+      Secondary authoritative DNS, MariaDB replica, and reverse proxy edge.
+    services:
+      - powerdns
+      - traefik
+    constraints:
+      requires_public_ip: true
+      exposes_http: true
+      exposes_dns: true
+      colocation_allowed: false
+    depends_on:
+      - role-edge-primary
+    exclusive: true
+
+  - id: role-management
+    name: "Management Plane"
+    tier: management
+    phase: 1
+    description: >
+      Source control, container management, and future SSO/monitoring stacks.
+    services:
+      - portainer
+      - gitlab
+      # Phase 2 (documented, not deployed in Phase 1):
+      # - authentik
+      # - prometheus
+      # - grafana
+      # - loki
+      # - uptime-kuma
+    constraints:
+      requires_public_ip: false
+      exposes_http: false          # HTTPS via edge Traefik only
+      exposes_dns: false
+      colocation_allowed: true   # explicit policy required in network.yaml if colocated
+    depends_on:
+      - role-edge-primary
+    exclusive: true
+
+  - id: role-monitoring
+    name: "Monitoring Plane"
+    tier: monitoring
+    phase: 2
+    description: "Observability stack — Phase 2 only."
+    services:
+      - prometheus
+      - grafana
+      - loki
+      - uptime-kuma
+    constraints:
+      requires_public_ip: false
+      exposes_http: false
+      exposes_dns: false
+      colocation_allowed: true
+    depends_on:
+      - role-management
+    exclusive: false

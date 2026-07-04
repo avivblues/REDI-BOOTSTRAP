@@ -1,0 +1,55 @@
+{
+  "failover": {
+    "dns": {
+      "label": "Authoritative DNS",
+      "primary": { "node": "redi-jkt-01", "host": "ns1.letsredi.com", "ip": "103.149.238.98" },
+      "secondary": { "node": "redi-sby-01", "host": "ns2.letsredi.com", "ip": "103.80.214.144" }
+    },
+    "edge": {
+      "label": "REDI Gateway (Traefik)",
+      "primary": { "node": "redi-jkt-01", "host": "traefik-jkt.letsredi.com", "mesh": "100.79.82.92" },
+      "secondary": { "node": "redi-sby-01", "host": "traefik-sby.letsredi.com", "mesh": "100.67.138.25" }
+    },
+    "management": {
+      "label": "Operations (Portainer)",
+      "primary": { "node": "redi-mjk-01", "host": "portainer.letsredi.com", "mesh": "100.81.86.37" }
+    }
+  },
+  "nodes": [
+    {
+      "id": "redi-jkt-01",
+      "role": "Edge Primary · Jakarta",
+      "location": "Jakarta",
+      "mesh_ip": "100.79.82.92",
+      "public_ip": "103.149.238.98",
+      "checks": [
+        { "name": "HTTPS Gateway", "type": "tcp", "host": "127.0.0.1", "port": 443, "timeout": 3 },
+        { "name": "PowerDNS API", "type": "tcp", "host": "redi-pdns-auth", "port": 8081, "timeout": 3 },
+        { "name": "Portainer Agent", "type": "tcp", "host": "100.79.82.92", "port": 9001, "timeout": 5 }
+      ]
+    },
+    {
+      "id": "redi-sby-01",
+      "role": "Edge Secondary · Surabaya",
+      "location": "Surabaya",
+      "mesh_ip": "100.67.138.25",
+      "public_ip": "103.80.214.144",
+      "checks": [
+        { "name": "SSH", "type": "tcp", "host": "103.80.214.144", "port": 2280, "timeout": 5 },
+        { "name": "Mesh", "type": "tcp", "host": "100.67.138.25", "port": 443, "timeout": 5 }
+      ]
+    },
+    {
+      "id": "redi-mjk-01",
+      "role": "Management · Mojokerto",
+      "location": "Mojokerto",
+      "mesh_ip": "100.81.86.37",
+      "public_ip": "103.80.214.226",
+      "checks": [
+        { "name": "Portainer Server", "type": "tcp", "host": "100.81.86.37", "port": 9443, "timeout": 5 },
+        { "name": "Portainer Agent", "type": "tcp", "host": "100.81.86.37", "port": 9001, "timeout": 5 },
+        { "name": "SSH", "type": "tcp", "host": "103.80.214.226", "port": 2280, "timeout": 5 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+# =============================================================================
+# REDI LAB — Portainer Agent
+# Deploy on all REDI nodes (edge + management)
+# =============================================================================
+
+services:
+  portainer-agent:
+    image: ${PORTAINER_AGENT_IMAGE:-portainer/agent:2.27.3}
+    container_name: redi-portainer-agent
+    restart: unless-stopped
+    networks:
+      - redi-management
+    ports:
+      - "${PORTAINER_AGENT_TAILSCALE_IP:-127.0.0.1}:9001:9001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    environment:
+      AGENT_CLUSTER_ADDR: ${PORTAINER_AGENT_TAILSCALE_IP}
+      AGENT_SECRET: ${PORTAINER_AGENT_SECRET}
+    healthcheck:
+      disable: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  redi-management:
+    external: true

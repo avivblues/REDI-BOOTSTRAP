@@ -1,0 +1,16 @@
+# =============================================================================
+# REDI LAB — PowerDNS with GeoIP2/Lua support (Sprint 3D)
+# Extends official pdns-auth-48 with lua-mmdb for geoiplookup2() in Lua records
+# =============================================================================
+ARG PDNS_IMAGE=powerdns/pdns-auth-48:latest
+FROM ${PDNS_IMAGE}
+
+USER root
+
+# Install MaxMind DB Lua binding (enables geoiplookup2() in Lua records)
+# Debian Bookworm package: lua-mmdb
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends lua-mmdb lua-compat53 \
+  && rm -rf /var/lib/apt/lists/*
+
+USER pdns
