@@ -374,10 +374,30 @@ Docker network aliases on `redi-internal` provide in-container resolution for co
 
 **Scripts:** `setup-sprint3c-redis.sh`, `deploy-redis-haproxy.sh`, `sync-redis-haproxy.sh`, `sync-redis-master-dns.sh`, `sync-redis-master.sh`, `redis-failover-test.sh`
 
+### Sprint 3D — GeoDNS Edge + Traefik SBY (2026-07-04)
+
+| Item | Status |
+|------|--------|
+| Traefik SBY (`redi-traefik-sby`) | **PASS** — HTTP/HTTPS 200 → mjk backends via mesh |
+| PowerDNS NS1 (jkt) LUA records | **PASS** — `git`, `registry`, `auth`, `proxy` → GeoIP routing |
+| `enable-lua-records` + GeoLite2 mmdb | **PASS** — restored via `pdns.conf` envsubst + geodns image |
+| PowerDNS NS2 (sby) | **PASS** — replica stack up; `dig @sby git.letsredi.com` → JKT default |
+| TLS on SBY edge | **PASS** — shared `acme-http.json` synced from jkt Traefik |
+| Geo route JI → SBY (ECS simulation) | **WARN** — default/fallback JKT; tune MaxMind subdivision `JI` |
+| Internal `.redi.internal` records | **PASS** — not geo-routed (3D.5 guard) |
+
+**Fixes applied during deploy:**
+- SBY Traefik: `acme-sby.json` / `acme-http.json` directory mounts → real JSON files
+- SBY Traefik: added `letsencrypt-http` resolver; GitLab backends → mjk-only (`100.81.86.37`)
+- JKT PowerDNS: restored full `.env` + rendered `pdns.conf` (was broken template `${}` vars)
+- NS2 SBY: recreated `redi-dns` network; MariaDB replica + pdns-auth serving port 53
+
+**Scripts:** `deploy-traefik-sby.sh`, `setup-geoip2-pdns.sh`, `apply-geodns-lua.sh`, `validate-geodns.sh`, `setup-pdns-envs.sh`
+
 | Phase | Scope |
 |-------|--------|
 | **3C** | Redis Sentinel + PowerDNS failover hook | **PASS** — HAProxy router + DNS sync; failover ~3 s to jkt |
-| **3D** | GeoDNS NS1/NS2 + Traefik edge SBY |
+| **3D** | GeoDNS NS1/NS2 + Traefik edge SBY | **PASS WITH WARNINGS** — edge SBY live; LUA on NS1; NS2 restored |
 | **3E** | MinIO distributed 3-node |
 | **Apps** | **GitLab EE** — shared PG/Redis/MinIO + HA via platform + edge GeoDNS/LB (bukan embedded DB) |
 

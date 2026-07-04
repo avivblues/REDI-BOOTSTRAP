@@ -281,8 +281,9 @@ Implementation of these platforms requires completion and validation of the REDI
     │     │     │        │      │      │       │      │      │
     ▼     ▼     ▼        ▼      ▼      ▼       ▼      ▼      ▼
  PostgreSQL Redis MinIO GitLab Authentik Registry Backup Monitoring DR
- # 8. Infrastructure Topology
-```
+ ```
+# 8. Infrastructure Topology
+
 ## 8.1 Purpose
 
 Provide the physical and logical infrastructure foundation for REDI Cloud Platform across three independent locations.
