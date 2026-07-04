@@ -12,15 +12,6 @@
 | Current Scope | Infrastructure through Monitoring Platform |
 
 ---
-## Overview
-
-| Server | Hostname | Role | Services |
-|--------|----------|------|----------|
-| Edge 1 | `redi-jkt-01` | Jakarta | PowerDNS (Primary), Traefik |
-| Edge 2 | `redi-sby-01` | Surabaya | PowerDNS (Replica), Traefik |
-| Management | `redi-mgmt-01` | Control Plane | GitLab CE, Portainer |
-
-All inter-service communication uses **Tailscale** private networking. Only **Traefik** exposes HTTP/HTTPS to the public internet.
 
 # 1. Executive Summary
 
@@ -291,7 +282,7 @@ Implementation of these platforms requires completion and validation of the REDI
     ▼     ▼     ▼        ▼      ▼      ▼       ▼      ▼      ▼
  PostgreSQL Redis MinIO GitLab Authentik Registry Backup Monitoring DR
  # 8. Infrastructure Topology
-
+```
 ## 8.1 Purpose
 
 Provide the physical and logical infrastructure foundation for REDI Cloud Platform across three independent locations.
