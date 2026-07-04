@@ -48,11 +48,18 @@ TS_IP="$(get_tailscale_ip)"
 log_info "Tailscale IP: ${TS_IP}"
 sed -i "s|^TRAEFIK_TAILSCALE_IP=.*|TRAEFIK_TAILSCALE_IP=${TS_IP}|" "${ENV_FILE}"
 
-# SBY-specific ACME storage (separate from jkt acme.json)
-ACME_FILE="${REDI_ROOT}/config/traefik/acme-sby.json"
-touch "${ACME_FILE}"
-chmod 600 "${ACME_FILE}"
-log_info "ACME store: ${ACME_FILE}"
+for acme_file in acme-sby.json acme-http.json; do
+  ACME_PATH="${REDI_ROOT}/config/traefik/${acme_file}"
+  if [[ -d "${ACME_PATH}" ]]; then
+    log_warn "Removing mistaken directory ${ACME_PATH}"
+    rm -rf "${ACME_PATH}"
+  fi
+  if [[ ! -f "${ACME_PATH}" ]]; then
+    echo '{}' > "${ACME_PATH}"
+  fi
+  chmod 600 "${ACME_PATH}"
+done
+log_info "ACME stores: ${REDI_ROOT}/config/traefik/acme-sby.json, acme-http.json"
 
 # PowerDNS credentials for ACME DNS-01 (Traefik pdns provider reads from env)
 PDNS_ENV="${REDI_ROOT}/config/traefik/powerdns.env"

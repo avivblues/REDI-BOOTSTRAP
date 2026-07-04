@@ -29,6 +29,7 @@ accessLog:
 entryPoints:
   web:
     address: ":80"
+    # HTTP-01 for public hosts (git, auth, registry)
 
   websecure:
     address: ":443"
@@ -58,8 +59,6 @@ providers:
     watch: true
 
 certificatesResolvers:
-  # DNS-01 via PowerDNS API on jkt (accessible via Tailscale mesh from sby)
-  # PDNS_API_URL must point to http://100.79.82.92:8081 in .env
   letsencrypt:
     acme:
       email: ops@letsredi.com
@@ -70,6 +69,13 @@ certificatesResolvers:
         resolvers:
           - "ns1.letsredi.com:53"
           - "ns2.letsredi.com:53"
+
+  letsencrypt-http:
+    acme:
+      email: ops@letsredi.com
+      storage: /etc/traefik/acme-http.json
+      httpChallenge:
+        entryPoint: web
 
 serversTransport:
   insecureSkipVerify: false

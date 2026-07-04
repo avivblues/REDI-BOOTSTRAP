@@ -11,5 +11,6 @@ services:
       - ${TRAEFIK_CONFIG_PATH}/traefik.sby.yml:/etc/traefik/traefik.yml:ro
       - ${TRAEFIK_CONFIG_PATH}/dynamic:/etc/traefik/dynamic:ro
       - ${TRAEFIK_CONFIG_PATH}/acme-sby.json:/etc/traefik/acme.json
+      - ${TRAEFIK_CONFIG_PATH}/acme-http.json:/etc/traefik/acme-http.json
       - ${TRAEFIK_LOG_PATH}:/var/log/traefik
     container_name: redi-traefik-sby
