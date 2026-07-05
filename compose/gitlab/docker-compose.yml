@@ -181,6 +181,17 @@ services:
         gitlab_rails['registry_enabled'] = true
         registry['registry_http_addr'] = "0.0.0.0:5000"
         registry_nginx['enable'] = false
+        registry['storage'] = {
+          's3' => {
+            'accesskey' => '${MINIO_ROOT_USER}',
+            'secretkey' => '${MINIO_ROOT_PASSWORD}',
+            'bucket' => 'gitlab-registry',
+            'region' => 'us-east-1',
+            'regionendpoint' => 'http://minio.redi.internal:9000',
+            'pathstyle' => true
+          }
+        }
+        gitlab_rails['object_store']['objects']['registry']['bucket'] = 'gitlab-registry'
         
         gitlab_pages['enable'] = false
         mattermost['enable'] = false
@@ -189,6 +200,34 @@ services:
         prometheus['enable'] = false
         gitlab_rails['time_zone'] = 'Asia/Jakarta'
         gitlab_rails['gitlab_default_can_create_group'] = false
+
+        if '${GITLAB_OIDC_ENABLED:-false}' == 'true'
+          gitlab_rails['omniauth_enabled'] = true
+          gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']
+          gitlab_rails['omniauth_block_auto_created_users'] = false
+          gitlab_rails['omniauth_auto_link_user'] = ['openid_connect']
+          gitlab_rails['omniauth_providers'] = [
+            {
+              'name' => 'openid_connect',
+              'label' => 'Authentik',
+              'args' => {
+                'name' => 'openid_connect',
+                'scope' => ['openid', 'profile', 'email'],
+                'response_type' => 'code',
+                'issuer' => '${GITLAB_OIDC_ISSUER}',
+                'discovery' => true,
+                'client_auth_method' => 'query',
+                'uid_field' => 'preferred_username',
+                'pkce' => true,
+                'client_options' => {
+                  'identifier' => '${GITLAB_OIDC_CLIENT_ID}',
+                  'secret' => '${GITLAB_OIDC_CLIENT_SECRET}',
+                  'redirect_uri' => '${GITLAB_EXTERNAL_URL}/users/auth/openid_connect/callback'
+                }
+              }
+            }
+          ]
+        end
     volumes:
       - ${GITLAB_DATA_PATH}/config:/etc/gitlab
       - ${GITLAB_DATA_PATH}/logs:/var/log/gitlab

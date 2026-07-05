@@ -32,6 +32,15 @@ http:
   services:
     authentik:
       loadBalancer:
+        sticky:
+          cookie:
+            name: _authentik_session_sticky
         servers:
-          - url: "http://100.81.86.37:9100"
+          - url: "http://100.81.86.37:9100" # MJK
+          - url: "http://100.79.82.92:9100" # JKT
+          - url: "http://100.67.138.25:9100" # SBY
         serversTransport: authentik-transport
+        healthCheck:
+          path: /-/health/ready/
+          interval: 15s
+          timeout: 3s

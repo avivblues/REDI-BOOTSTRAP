@@ -15,7 +15,6 @@ services:
       - "${AUTHENTIK_TAILSCALE_IP}:9100:9000"
     extra_hosts:
       - "minio.redi.internal:host-gateway"
-      - "redis.redi.internal:${REDI_INTERNAL_GATEWAY:-172.32.0.1}"
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
       AUTHENTIK_POSTGRESQL__HOST: postgres.redi.internal
@@ -31,7 +30,7 @@ services:
       - ${AUTHENTIK_DATA_PATH}/media:/media
       - ${AUTHENTIK_DATA_PATH}/templates:/templates
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9000/-/health/ready/"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/-/health/ready/')"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -46,7 +45,6 @@ services:
       - redi-internal
     extra_hosts:
       - "minio.redi.internal:host-gateway"
-      - "redis.redi.internal:${REDI_INTERNAL_GATEWAY:-172.32.0.1}"
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
       AUTHENTIK_POSTGRESQL__HOST: postgres.redi.internal

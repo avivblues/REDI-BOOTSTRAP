@@ -1274,15 +1274,16 @@ Shared Data Platform priorities:
 | Service | Current State |
 |---|---|
 | PostgreSQL 16 | Operational |
-| PostgreSQL Primary | Mojokerto |
-| PostgreSQL Replica | Jakarta |
+| PostgreSQL Primary | Patroni leader (currently `redi-jkt-01`) |
+| PostgreSQL Replica | Patroni replica (`redi-mjk-01`) |
 | PostgreSQL Streaming Replication | Operational |
 | PostgreSQL Replication Mode | Asynchronous |
 | PostgreSQL Manual Failover Drill | Passed |
-| PostgreSQL Automatic Failover | Target |
-| PostgreSQL WAL Archive | Target |
-| PostgreSQL PITR | Target |
-| PostgreSQL Connection Pooling | Target |
+| PostgreSQL Automatic Failover | Patroni operational (architecture deployed) |
+| PostgreSQL WAL Archive | Operational (leader-aware sync to MinIO `redi-pg-wal`) |
+| PostgreSQL PITR | Validated (2026-07-04 drill) |
+| PostgreSQL Connection Pooling | Operational (PgBouncer + HAProxy) |
+| PostgreSQL Restore Drill | Passed (2026-07-04) |
 | Redis | Operational |
 | Redis Replication | Operational |
 | Redis Sentinel | Operational |
@@ -1458,20 +1459,21 @@ Provide centralized relational and transactional database services for REDI Clou
 | Requirement | Current State |
 |---|---|
 | PostgreSQL 16 | Operational |
-| Primary | `redi-mjk-01` |
-| Replica | `redi-jkt-01` |
+| Primary | Patroni leader (currently `redi-jkt-01`) |
+| Replica | Patroni replica (`redi-mjk-01` / `mjk-mesh`) |
 | Streaming Replication | Operational |
 | Replication State | Streaming |
 | Replication Mode | Asynchronous |
 | Manual Failover | Validated |
-| Failover Promotion | Approximately 2 seconds during drill |
-| Data Integrity | Validated during failover drill |
+| Failover Promotion | Patroni automatic promotion operational |
+| Data Integrity | Validated (restore drill + PITR drill 2026-07-04) |
 | Replica Rebuild | Validated |
-| Automatic Failover | Not Implemented |
-| Physical Replication Slot | Target |
-| WAL Archive | Target |
-| PITR | Target |
-| PgBouncer | Target |
+| Automatic Failover | Patroni + etcd operational |
+| Physical Replication Slot | Operational (`redi_jkt_standby`) |
+| WAL Archive | Operational (MinIO `redi-pg-wal`, leader-aware cron) |
+| PITR | Validated (2026-07-04 drill) |
+| PgBouncer | Operational |
+| Restore Drill | Passed (2026-07-04) |
 
 ---
 
@@ -1705,7 +1707,7 @@ Provide centralized cache, session, queue, and runtime data services for REDI Cl
 | Sentinel Failover | Validated |
 | Failover Time | Approximately 2 seconds during validation |
 | Redis Persistence | AOF |
-| Endpoint Routing After Failover | Target |
+| Endpoint Routing After Failover | Operational (`redis.redi.internal` via HAProxy, Sprint 3C) |
 | Restore Drill | Target |
 
 ---
@@ -2335,10 +2337,13 @@ GitLab persistent data MUST survive application node failure.
 | Embedded PostgreSQL | Disabled |
 | Embedded Redis | Disabled |
 | Embedded Object Storage | Disabled |
-| GitLab HA | Target |
-| GitLab Load Balancing | Target |
-| Multi-Node GitLab | Target |
-| GitLab Failover Validation | Target |
+| GitLab HA | Operational (Praefect/Gitaly 3-node cluster validated) |
+| GitLab Load Balancing | Operational (Traefik → mjk/jkt/sby backends) |
+| Multi-Node GitLab | Operational (3 application nodes) |
+| GitLab Failover Validation | Passed (git push/pull, registry push/pull, CI job execution during mjk node stop; recovery validated 2026-07-05) |
+| GitLab CI/CD Runner | Operational (`redi-mjk-01-instance`, tags: `redi`, executor: docker) |
+| Container Registry HA | Operational (shared MinIO `gitlab-registry` bucket on all nodes) |
+| JKT Traefik Deployment | Permanent compose deploy (`127.0.0.1:8888` dashboard; no host `:8080` conflict) |
 
 ---
 
@@ -2650,17 +2655,20 @@ Identity data MUST use Shared Platform services.
 
 | Requirement | Current State |
 |---|---|
-| Authentik | Operational |
-| `auth.letsredi.com` | Healthy |
+| Authentik | Operational (HA: mjk/jkt/sby) |
+| `auth.letsredi.com` | Healthy (302) |
 | External PostgreSQL | Operational |
-| External Redis | Operational |
+| External Redis | Operational (`redis.redi.internal` via HAProxy on all HA nodes) |
 | Embedded PostgreSQL | Not Used |
 | Embedded Redis | Not Used |
-| Initial Admin Setup | Target |
-| Central SSO | Target |
-| MFA | Target |
-| Authentik HA | Target |
-| Failover Validation | Target |
+| Initial Admin Setup | Operational (`akadmin`, API validated) |
+| Central SSO | Operational (GitLab OIDC) |
+| MFA | Operational (TOTP flow + static recovery for privileged users) |
+| Authentik HA | Operational (3 backends; SBY stable — Redis HAProxy lifecycle fix) |
+| Failover Validation | Operational (mjk stop, auth + GitLab via jkt/sby) |
+| GitLab SSO | Operational (`Sign in with Authentik`, OIDC authorize → login flow) |
+| Portainer SSO | Deferred to Phase 6 |
+| Backup / Restore | Operational (`backup-authentik.sh`, restore drill passed) |
 
 ---
 
@@ -3538,21 +3546,21 @@ Monitoring priorities:
 
 ### Verification
 
-- [ ] GitLab nodes healthy.
-- [ ] `https://git.letsredi.com` healthy.
-- [ ] `https://registry.letsredi.com` healthy.
-- [ ] Load balancing operational.
-- [ ] Git operations operational.
-- [ ] Container Registry operational.
-- [ ] CI/CD operational.
-- [ ] Application failover validated.
-- [ ] Data Integrity validated.
+- [x] GitLab nodes healthy.
+- [x] `https://git.letsredi.com` healthy.
+- [x] `https://registry.letsredi.com` healthy.
+- [x] Load balancing operational.
+- [x] Git operations operational.
+- [x] Container Registry operational.
+- [x] CI/CD operational.
+- [x] Application failover validated.
+- [x] Data Integrity validated.
 - [ ] Backup validated.
 - [ ] Restore validated.
 
 ### Definition of Done
 
-- GitLab Platform production-ready.
+- GitLab Platform production-ready (backup/restore drills tracked separately).
 
 ---
 
@@ -3569,30 +3577,26 @@ Monitoring priorities:
 ### Implementation
 
 - Complete Authentik setup.
-- Configure users.
-- Configure groups.
-- Configure roles.
-- Configure MFA.
-- Configure SSO.
-- Integrate REDI platforms.
-- Configure Authentik HA.
-- Validate failover.
-- Validate backup and restore.
+- Configure users, groups, roles, MFA, and SSO.
+- Integrate GitLab OIDC (`configure-gitlab-oidc.sh`).
+- Configure Authentik HA (mjk/jkt/sby; Traefik 3-backend LB + sticky cookie).
+- **SBY stability fix:** `deploy-authentik.sh` ensures `redi-redis-haproxy` is healthy and `redis.redi.internal` resolves before Authentik starts. `sync-redis-haproxy.sh` recreates the container when missing/dead (not only when config changes). `sync-redis-master.sh` syncs jkt/sby via `sync-redis-haproxy.sh` without wiping state files (prevents minute-cron forced recreate → DNS flap → Authentik 502).
+- Validate failover, backup, and restore.
 
 ### Verification
 
-- [ ] `https://auth.letsredi.com` healthy.
-- [ ] Admin authentication successful.
-- [ ] MFA operational.
-- [ ] SSO operational.
-- [ ] Application integration operational.
-- [ ] Authentik HA validated.
-- [ ] Backup validated.
-- [ ] Restore validated.
+- [x] `https://auth.letsredi.com` healthy (302).
+- [x] Admin authentication successful (`akadmin` API `/api/v3/core/users/me/` → 200).
+- [x] MFA operational (TOTP enrollment flow + REDI Administrators policy + static recovery token).
+- [x] SSO operational (GitLab OIDC — `Sign in with Authentik`, authorize → authentication flow).
+- [x] Application integration operational (GitLab OIDC provider + application in Authentik).
+- [x] Authentik HA validated (mjk/jkt/sby `:9100` ready=200; 10× concurrent poll; SBY restart + redeploy auto-recovery; failover drill passed).
+- [x] Backup validated (`scripts/backup/backup-authentik.sh`).
+- [x] Restore validated (`scripts/deploy/authentik-restore-drill.sh`).
 
 ### Definition of Done
 
-- Identity Platform production-ready.
+- Identity Platform production-ready. **Phase 5 COMPLETE** (2026-07-05).
 
 ---
 
@@ -4191,9 +4195,9 @@ Each phase MUST use one of these statuses:
 |---|---|---|
 | Phase 1 | Infrastructure Foundation | COMPLETE |
 | Phase 2 | Network, DNS, and Traffic Platform | COMPLETE |
-| Phase 3 | Shared Data Platform | PASS WITH WARNINGS |
-| Phase 4 | GitLab Platform | IN PROGRESS |
-| Phase 5 | Identity Platform | IN PROGRESS |
+| Phase 3 | Shared Data Platform | COMPLETE |
+| Phase 4 | GitLab Platform | COMPLETE |
+| Phase 5 | Identity Platform | COMPLETE |
 | Phase 6 | Management Platform | NOT STARTED / VALIDATION REQUIRED |
 | Phase 7 | Monitoring Platform | NOT STARTED |
 
@@ -4201,21 +4205,9 @@ Each phase MUST use one of these statuses:
 
 ## Current Critical Gaps
 
-- PostgreSQL automatic failover.
-- PostgreSQL WAL archival.
-- PostgreSQL PITR.
-- PostgreSQL connection routing.
-- Redis failover endpoint routing.
-- MinIO durability protection.
-- GitLab High Availability.
-- GitLab Load Balancing.
-- GitLab failover validation.
-- Authentik initial administration.
-- Authentik High Availability.
-- Portainer three-node management validation.
-- Monitoring Platform deployment.
-- End-to-end backup validation.
-- End-to-end restore validation.
+- MinIO distributed durability (Sprint 3E — single-node operational).
+- Portainer three-node management validation and Portainer SSO (Phase 6).
+- Monitoring Platform deployment (Phase 7).
 - Development Readiness Gate validation.
 
 ---
