@@ -31,24 +31,34 @@ PDNS_ENV="${REDI_ROOT}/compose/powerdns/.env"
 source "${PDNS_ENV}"
 
 PDNS_API_URL="${PDNS_API_URL:-http://127.0.0.1:8081}"
-PDNS_API_KEY="${PDNS_API_KEY:?PDNS_API_KEY not set}"
+if ! curl -sf -o /dev/null -H "X-API-Key: ${PDNS_API_KEY}" "${PDNS_API_URL}/api/v1/servers/localhost" 2>/dev/null; then
+  PDNS_API_URL="http://$(get_tailscale_ip):${PDNS_WEBSERVER_PORT:-8081}"
+fi
 ZONE="letsredi.com."
 API="${PDNS_API_URL}/api/v1/servers/localhost/zones/${ZONE}"
 
 JKT_IP="103.149.238.98"
 SBY_IP="103.80.214.144"
 MMDB_PATH="/etc/powerdns/geoip/GeoLite2-City.mmdb"
+JT_CIDR="103.80.214.0/24"
 
 # ---------------------------------------------------------------------------
 # Helper: call pdns API
 # ---------------------------------------------------------------------------
 pdns_patch() {
   local payload="$1"
-  curl -sf -X PATCH \
+  local resp http_code
+  resp="$(curl -s -w $'\n%{http_code}' -X PATCH \
     -H "X-API-Key: ${PDNS_API_KEY}" \
     -H "Content-Type: application/json" \
     "${API}" \
-    -d "${payload}"
+    -d "${payload}")"
+  http_code="${resp##*$'\n'}"
+  if [[ "${http_code}" =~ ^2 ]]; then
+    return 0
+  fi
+  log_error "PowerDNS API PATCH failed (HTTP ${http_code}): ${resp%$'\n'*}"
+  return 1
 }
 
 pdns_get_record() {
@@ -71,15 +81,14 @@ for rr in data.get('rrsets', []):
 # bestwho() returns ECS client IP if present, else resolver IP
 # ---------------------------------------------------------------------------
 geo_lua_content() {
-  # Escape for JSON string
   cat <<EOF
-A "((function() local ok, err = pcall(function() local mmdb = require('mmdb'); local db = mmdb.open('${MMDB_PATH}'); local ip = bestwho:toString():gsub(':%d+$', ''); local search = ip:find('.', 1, true) and db.search_ipv4 or db.search_ipv6; local res = search(db, ip); if res and res.subdivisions and res.subdivisions[1] then return res.subdivisions[1].iso_code end; return nil end); if ok and err == 'JI' then return {'${SBY_IP}'} else return {'${JKT_IP}'} end end)())"
+A ";local ip=bestwho:toString():gsub(':%d+$',''); if ip:match('^103%.80%.214%.') then return {'${SBY_IP}'} end; local m=require('mmdb'); local db=m.open('${MMDB_PATH}'); local res=db:search_ipv4(ip); if res and res.subdivisions and res.subdivisions[1] then local c=res.subdivisions[1].iso_code or res.subdivisions[1]['iso_code']; if c=='JI' then return {'${SBY_IP}'} end end; return {'${JKT_IP}'}"
 EOF
 }
 
 LUA_CONTENT="$(geo_lua_content | tr -d '\n')"
 
-log_info "GeoDNS Lua logic: Jawa Timur (JI) → ${SBY_IP} | others → ${JKT_IP}"
+log_info "GeoDNS Lua logic: ${JT_CIDR} or Jawa Timur (JI) → ${SBY_IP} | others → ${JKT_IP}"
 
 # ---------------------------------------------------------------------------
 # Records to geo-route (public, behind Traefik edge)

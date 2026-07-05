@@ -35,7 +35,12 @@ services:
         max-file: "5"
 
   pdns-auth:
-    image: ${PDNS_IMAGE}
+    build:
+      context: .
+      dockerfile: Dockerfile.geodns
+      args:
+        PDNS_IMAGE: ${PDNS_IMAGE:-powerdns/pdns-auth-48:latest}
+    image: redi-pdns-auth-geodns:latest
     container_name: redi-pdns-auth
     restart: unless-stopped
     depends_on:
@@ -63,6 +68,7 @@ services:
       PDNS_SOA_MINIMUM: ${PDNS_SOA_MINIMUM}
     volumes:
       - ${PDNS_CONFIG_PATH}/pdns.conf:/etc/powerdns/pdns.conf:ro
+      - ${PDNS_CONFIG_PATH}/geoip:/etc/powerdns/geoip:ro
       - ${PDNS_LOG_PATH}/pdns:/var/log/pdns
     healthcheck:
       test: ["CMD-SHELL", "pdns_control rping || exit 1"]

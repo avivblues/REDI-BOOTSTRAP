@@ -22,6 +22,17 @@ source "${SCRIPT_DIR}/../lib/common.sh"
 
 require_root
 
+HOSTNAME="$(hostname -s)"
+COMPOSE_FILES=(-f docker-compose.yml)
+case "${HOSTNAME}" in
+  redi-jkt-01) COMPOSE_FILES+=(-f docker-compose.geodns.yml) ;;
+  redi-sby-01) COMPOSE_FILES+=(-f docker-compose.replica-stack.yml) ;;
+  *)
+    log_error "GeoIP setup runs on redi-jkt-01 (NS1) or redi-sby-01 (NS2). Current: ${HOSTNAME}"
+    exit 1
+    ;;
+esac
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -90,8 +101,7 @@ source "${PDNS_ENV}"
 log_info "Building redi-pdns-auth-geodns image (adds lua-mmdb)..."
 cd "${COMPOSE_DIR}"
 docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.geodns.yml \
+  "${COMPOSE_FILES[@]}" \
   --env-file "${PDNS_ENV}" \
   build pdns-auth
 
@@ -100,15 +110,13 @@ docker compose \
 # ---------------------------------------------------------------------------
 log_info "Restarting pdns-auth with GeoDNS support..."
 docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.geodns.yml \
+  "${COMPOSE_FILES[@]}" \
   --env-file "${PDNS_ENV}" \
   up -d pdns-auth
 
 sleep 5
 docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.geodns.yml \
+  "${COMPOSE_FILES[@]}" \
   --env-file "${PDNS_ENV}" \
   ps pdns-auth
 

@@ -25,8 +25,11 @@ PDNS_ENV="${REDI_ROOT}/compose/powerdns/.env"
 # shellcheck source=/dev/null
 source "${PDNS_ENV}"
 
-PDNS_API_URL="${PDNS_API_URL:-http://127.0.0.1:8081}"
 PDNS_API_KEY="${PDNS_API_KEY:?PDNS_API_KEY not set}"
+PDNS_API_URL="${PDNS_API_URL:-http://127.0.0.1:8081}"
+if ! curl -sf -o /dev/null -H "X-API-Key: ${PDNS_API_KEY}" "${PDNS_API_URL}/api/v1/servers/localhost" 2>/dev/null; then
+  PDNS_API_URL="http://$(get_tailscale_ip):${PDNS_WEBSERVER_PORT:-8081}"
+fi
 ZONE="letsredi.com."
 API="${PDNS_API_URL}/api/v1/servers/localhost/zones/${ZONE}"
 
@@ -39,7 +42,7 @@ NS2="103.80.214.144"       # ns2.letsredi.com (sby)
 # JKT/West Java area — Telkom Jakarta range (example)
 ECS_JKT="180.247.0.0/24"
 # Jawa Timur/Surabaya area — SBY public IP (confirmed JI in MaxMind)
-ECS_JATIM="103.80.214.144/32"
+ECS_JATIM="103.80.214.165/32"
 
 PASS=0; FAIL=0; WARN=0
 

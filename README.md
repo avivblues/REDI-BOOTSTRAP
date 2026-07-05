@@ -2149,6 +2149,21 @@ Provide authoritative DNS services, domain management, service discovery support
 | PostgreSQL Backend | Operational |
 | DNS API Automation | Available / Target Expansion |
 | Service Failover DNS Automation | Target where applicable |
+| GeoDNS Edge Routing | Operational (Jawa Timur → SBY `103.80.214.144`; default → JKT `103.149.238.98`) |
+
+### GeoDNS Policy (Phase 2 hotfix)
+
+Public edge domains (`git`, `registry`, `auth`, `proxy`) use PowerDNS **LUA** records on **both** NS1 (JKT) and NS2 (SBY):
+
+| Client region | Edge IP | Node |
+|---|---|---|
+| Jawa Timur (MaxMind subdivision `JI`) | `103.80.214.144` | Surabaya |
+| REDI `103.80.214.0/24` (Situbondo / East Java clients) | `103.80.214.144` | Surabaya |
+| All others | `103.149.238.98` | Jakarta |
+
+Edge IPs: Jakarta `103.149.238.98`, Surabaya `103.80.214.144`, Mojokerto `103.80.214.226` (Traefik HA backend; not a GeoDNS target).
+
+Apply: `scripts/deploy/apply-geodns-lua.sh` (NS1). NS2 receives LUA via MariaDB replication; run `scripts/deploy/fix-pdns-replica-sync.sh` if replica SQL drifts.
 
 ---
 
