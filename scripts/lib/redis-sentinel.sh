@@ -6,14 +6,22 @@
 redis_sentinel_master_addr() {
   local sentinel_host="${1:-127.0.0.1}"
   local sentinel_port="${2:-26379}"
-  local password="${3:-}"
+  local password="${3:-${REDIS_PASSWORD:-}}"
   local auth=()
   [[ -n "${password}" ]] && auth=(-a "${password}")
 
-  local out
+  local out=""
   if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'redi-redis-sentinel'; then
-    out="$(docker exec redi-redis-sentinel redis-cli -p "${sentinel_port}" "${auth[@]}" \
-      sentinel get-master-addr-by-name redi-master 2>/dev/null || true)"
+    for host in 127.0.0.1 "${NODE_MESH_IP:-}"; do
+      [[ -n "${host}" ]] || continue
+      out="$(docker exec redi-redis-sentinel redis-cli -h "${host}" -p "${sentinel_port}" "${auth[@]}" \
+        sentinel get-master-addr-by-name redi-master 2>/dev/null || true)"
+      [[ -n "${out}" ]] && break
+    done
+    if [[ -z "${out}" ]]; then
+      out="$(docker exec redi-redis-sentinel grep -E '^sentinel monitor redi-master ' /data/sentinel.conf 2>/dev/null \
+        | awk '{print $4"\n"$5}' || true)"
+    fi
   else
     out="$(redis-cli -h "${sentinel_host}" -p "${sentinel_port}" "${auth[@]}" \
       sentinel get-master-addr-by-name redi-master 2>/dev/null || true)"
@@ -30,14 +38,17 @@ redis_sentinel_master_ip() {
   redis_sentinel_master_addr "$@" | sed -n '1p'
 }
 
-# HAProxy on redi-internal cannot reach Tailscale mesh IPs; map to docker DNS when local.
+# Bridge HAProxy uses local redis when this node is Sentinel master; otherwise mesh IP.
 redis_haproxy_backend_addr() {
   local master_ip="${1:-}"
   local master_port="${2:-6379}"
-  local mjk_mesh="${MJK_MESH_IP:-100.81.86.37}"
-  local jkt_mesh="${JKT_MESH_IP:-100.79.82.92}"
+  local local_mesh="${NODE_MESH_IP:-}"
 
-  if [[ "${master_ip}" == "${mjk_mesh}" ]]; then
+  if [[ -z "${local_mesh}" ]] && command -v get_tailscale_ip >/dev/null 2>&1; then
+    local_mesh="$(get_tailscale_ip 2>/dev/null || true)"
+  fi
+
+  if [[ -n "${local_mesh}" && "${master_ip}" == "${local_mesh}" ]]; then
     printf '%s\n%s\n' "redi-redis" "${master_port}"
   else
     printf '%s\n%s\n' "${master_ip}" "${master_port}"

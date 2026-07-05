@@ -1,0 +1,54 @@
+groups:
+  - name: redi-infrastructure
+    rules:
+      - alert: InstanceDown
+        expr: up{job="node-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node exporter down on {{ $labels.node }}"
+          description: "Node exporter on {{ $labels.instance }} is unreachable."
+
+      - alert: HighCpuUsage
+        expr: 100 - (avg by(node, instance) (rate(node_cpu_seconds_total{mode="idle",job="node-exporter"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU on {{ $labels.node }}"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{job="node-exporter",mountpoint="/",fstype!="rootfs"} / node_filesystem_size_bytes{job="node-exporter",mountpoint="/",fstype!="rootfs"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.node }}"
+
+  - name: redi-public-availability
+    rules:
+      - alert: PublicUrlDown
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Public URL probe failed for {{ $labels.instance }}"
+
+      - alert: PlatformTcpDown
+        expr: probe_success{job="blackbox-tcp"} == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Platform TCP probe failed for {{ $labels.instance }}"
+
+  - name: redi-validation
+    rules:
+      - alert: MonitoringWatchdog
+        expr: vector(1)
+        labels:
+          severity: none
+        annotations:
+          summary: "REDI monitoring alert pipeline validation marker"

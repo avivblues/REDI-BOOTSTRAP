@@ -1,0 +1,25 @@
+# REDI — GitLab Runner (instance runner on redi-mjk-01)
+services:
+  gitlab-runner:
+    image: ${GITLAB_RUNNER_IMAGE:-gitlab/gitlab-runner:v17.8.1}
+    container_name: redi-gitlab-runner
+    restart: unless-stopped
+    # GitLab container hostname is git.letsredi.com — Docker embedded DNS would
+    # route the runner to local nginx:80 instead of Traefik HTTPS on the edge.
+    extra_hosts:
+      - "git.letsredi.com:103.149.238.98"
+      - "registry.letsredi.com:103.149.238.98"
+    networks:
+      - redi-management
+    volumes:
+      - ${GITLAB_RUNNER_CONFIG_PATH:-../../data/gitlab-runner}:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+networks:
+  redi-management:
+    external: true

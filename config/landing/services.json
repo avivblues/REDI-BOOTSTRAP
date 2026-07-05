@@ -26,9 +26,9 @@
       "title": "Management Platform",
       "icon": "▣",
       "services": [
-        { "name": "GitLab", "host": "git.letsredi.com", "url": "https://git.letsredi.com", "status": "placeholder" },
-        { "name": "Registry", "host": "registry.letsredi.com", "url": "https://registry.letsredi.com", "status": "placeholder" },
-        { "name": "Auth", "host": "auth.letsredi.com", "url": "https://auth.letsredi.com", "status": "placeholder", "note": "Authentik" }
+        { "name": "GitLab", "host": "git.letsredi.com", "url": "https://git.letsredi.com", "status": "production", "note": "GitLab CE HA (JKT/MJK/SBY)" },
+        { "name": "Registry", "host": "registry.letsredi.com", "url": "https://registry.letsredi.com", "status": "production", "note": "Container Registry" },
+        { "name": "Auth", "host": "auth.letsredi.com", "url": "https://auth.letsredi.com", "status": "production", "note": "Authentik SSO" }
       ]
     },
     {
@@ -36,9 +36,9 @@
       "title": "Observability",
       "icon": "◎",
       "services": [
+        { "name": "Grafana", "host": "grafana.letsredi.com", "url": "https://grafana.letsredi.com", "status": "production", "note": "Monitoring dashboards" },
+        { "name": "Prometheus", "host": "prometheus.letsredi.com", "url": "https://prometheus.letsredi.com", "status": "production", "note": "Metrics backend (mesh VPN)", "mesh": true },
         { "name": "Monitor", "host": "monitor.letsredi.com", "url": "https://monitor.letsredi.com", "status": "placeholder" },
-        { "name": "Grafana", "host": "grafana.letsredi.com", "url": "https://grafana.letsredi.com", "status": "placeholder" },
-        { "name": "Prometheus", "host": "prometheus.letsredi.com", "url": "https://prometheus.letsredi.com", "status": "placeholder" },
         { "name": "Loki", "host": "loki.letsredi.com", "url": "https://loki.letsredi.com", "status": "placeholder" },
         { "name": "Uptime", "host": "uptime.letsredi.com", "url": "https://uptime.letsredi.com", "status": "placeholder" },
         { "name": "Logs", "host": "logs.letsredi.com", "url": "https://logs.letsredi.com", "status": "placeholder" }

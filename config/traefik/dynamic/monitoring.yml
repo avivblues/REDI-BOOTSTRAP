@@ -1,0 +1,41 @@
+# =============================================================================
+# REDI — Traefik Dynamic Configuration: Grafana (cross-host via mesh)
+# =============================================================================
+
+http:
+  serversTransports:
+    grafana-transport:
+      forwardingTimeouts:
+        dialTimeout: 30s
+        responseHeaderTimeout: 120s
+
+  routers:
+    grafana:
+      rule: "Host(`grafana.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: grafana
+      middlewares:
+        - security-headers@file
+        - rate-limit@file
+      tls:
+        certResolver: letsencrypt-http
+
+    grafana-http:
+      rule: "Host(`grafana.letsredi.com`)"
+      entryPoints:
+        - web
+      service: grafana
+      middlewares:
+        - security-headers@file
+
+  services:
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://100.81.86.37:3000"
+        serversTransport: grafana-transport
+        healthCheck:
+          path: /api/health
+          interval: 15s
+          timeout: 3s

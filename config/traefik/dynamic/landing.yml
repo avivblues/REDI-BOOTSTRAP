@@ -1,0 +1,35 @@
+# =============================================================================
+# REDI — Traefik: Landing + Status Dashboard (redi-jkt-01 local)
+# File provider — docker labels unreliable on JKT edge
+# =============================================================================
+
+http:
+  routers:
+    redi-landing:
+      rule: "Host(`letsredi.com`) || Host(`www.letsredi.com`) || Host(`status.letsredi.com`)"
+      entryPoints:
+        - websecure
+      service: redi-landing
+      middlewares:
+        - security-headers@file
+      tls:
+        certResolver: letsencrypt-http
+        domains:
+          - main: letsredi.com
+            sans:
+              - www.letsredi.com
+              - status.letsredi.com
+
+    redi-landing-http:
+      rule: "Host(`letsredi.com`) || Host(`www.letsredi.com`) || Host(`status.letsredi.com`)"
+      entryPoints:
+        - web
+      service: redi-landing
+      middlewares:
+        - security-headers@file
+
+  services:
+    redi-landing:
+      loadBalancer:
+        servers:
+          - url: "http://redi-landing:8080"

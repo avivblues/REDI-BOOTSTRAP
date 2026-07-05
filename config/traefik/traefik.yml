@@ -32,16 +32,6 @@ entryPoints:
 
   websecure:
     address: ":443"
-    http:
-      tls:
-        certResolver: letsencrypt
-        domains:
-          - main: "redi.lab"
-            sans:
-              - "*.redi.lab"
-          - main: "letsredi.com"
-            sans:
-              - "*.letsredi.com"
 
   traefik:
     address: ":8080"

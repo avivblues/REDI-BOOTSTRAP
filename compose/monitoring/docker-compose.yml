@@ -1,0 +1,88 @@
+# =============================================================================
+# REDI — Monitoring Stack (Prometheus + Grafana + Alertmanager + Blackbox)
+# Central server: redi-mjk-01
+# =============================================================================
+
+services:
+  prometheus:
+    image: ${PROMETHEUS_IMAGE}
+    container_name: redi-prometheus
+    restart: unless-stopped
+    networks:
+      - redi-management
+    ports:
+      - "${MONITORING_TAILSCALE_IP:-127.0.0.1}:9090:9090"
+    volumes:
+      - ${MONITORING_CONFIG_PATH}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${MONITORING_CONFIG_PATH}/prometheus/alerts:/etc/prometheus/alerts:ro
+      - ${MONITORING_DATA_PATH}/prometheus:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+      - --web.route-prefix=/
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  alertmanager:
+    image: ${ALERTMANAGER_IMAGE}
+    container_name: redi-alertmanager
+    restart: unless-stopped
+    networks:
+      - redi-management
+    ports:
+      - "${MONITORING_TAILSCALE_IP:-127.0.0.1}:9093:9093"
+    volumes:
+      - ${MONITORING_CONFIG_PATH}/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ${MONITORING_DATA_PATH}/alertmanager:/alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    image: ${GRAFANA_IMAGE}
+    container_name: redi-grafana
+    restart: unless-stopped
+    networks:
+      - redi-management
+      - redi-proxy
+    ports:
+      - "${MONITORING_TAILSCALE_IP:-127.0.0.1}:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_ROOT_URL: https://grafana.letsredi.com
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ${MONITORING_DATA_PATH}/grafana:/var/lib/grafana
+      - ${MONITORING_CONFIG_PATH}/grafana/provisioning:/etc/grafana/provisioning:ro
+    security_opt:
+      - no-new-privileges:true
+
+  blackbox-exporter:
+    image: ${BLACKBOX_EXPORTER_IMAGE}
+    container_name: redi-blackbox-exporter
+    restart: unless-stopped
+    networks:
+      - redi-management
+    ports:
+      - "${MONITORING_TAILSCALE_IP:-127.0.0.1}:9115:9115"
+    volumes:
+      - ${MONITORING_CONFIG_PATH}/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  redi-management:
+    external: true
+  redi-proxy:
+    external: true

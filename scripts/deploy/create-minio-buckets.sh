@@ -16,6 +16,7 @@ ENDPOINT="http://${MJK_MESH_IP}:9000"
 BUCKETS=(
   gitlab-artifacts gitlab-mr-diffs gitlab-lfs gitlab-uploads
   gitlab-packages gitlab-dep-proxy gitlab-terraform gitlab-ci-secure-files
+  gitlab-registry
   redi-pg-wal
 )
 

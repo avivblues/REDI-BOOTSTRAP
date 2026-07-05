@@ -105,6 +105,9 @@ case "${HOSTNAME}" in
     backup_shared_redis
     backup_shared_minio
     backup_gitlab
+    if [[ -f "${REDI_ROOT}/scripts/backup/backup-authentik.sh" ]]; then
+      bash "${REDI_ROOT}/scripts/backup/backup-authentik.sh" "${BACKUP_DATE}"
+    fi
     ;;
 esac
 

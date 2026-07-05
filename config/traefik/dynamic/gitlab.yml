@@ -56,7 +56,9 @@ http:
           cookie:
             name: _gitlab_session_sticky
         servers:
-          - url: "http://100.81.86.37:8929" # MJK primary
+          - url: "http://100.81.86.37:8929" # MJK
+          - url: "http://100.79.82.92:8929" # JKT
+          - url: "http://100.67.138.25:8929" # SBY
         serversTransport: gitlab-transport
         healthCheck:
           path: /users/sign_in
@@ -65,8 +67,13 @@ http:
 
     gitlab-registry:
       loadBalancer:
+        sticky:
+          cookie:
+            name: _gitlab_registry_sticky
         servers:
-          - url: "http://100.81.86.37:5000" # MJK primary
+          - url: "http://100.81.86.37:5000" # MJK
+          - url: "http://100.79.82.92:5000" # JKT
+          - url: "http://100.67.138.25:5000" # SBY
         serversTransport: gitlab-transport
         healthCheck:
           path: /
@@ -85,4 +92,6 @@ tcp:
     gitlab-ssh:
       loadBalancer:
         servers:
-          - address: "100.81.86.37:2223" # MJK primary
+          - address: "100.81.86.37:2223" # MJK
+          - address: "100.79.82.92:2223" # JKT
+          - address: "100.67.138.25:2223" # SBY

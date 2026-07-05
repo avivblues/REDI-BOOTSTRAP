@@ -13,6 +13,10 @@
     "management": {
       "label": "Operations (Portainer)",
       "primary": { "node": "redi-mjk-01", "host": "portainer.letsredi.com", "mesh": "100.81.86.37" }
+    },
+    "monitoring": {
+      "label": "Monitoring (Prometheus/Grafana)",
+      "primary": { "node": "redi-mjk-01", "host": "grafana.letsredi.com", "mesh": "100.81.86.37" }
     }
   },
   "nodes": [
@@ -48,6 +52,8 @@
       "checks": [
         { "name": "Portainer Server", "type": "tcp", "host": "100.81.86.37", "port": 9443, "timeout": 5 },
         { "name": "Portainer Agent", "type": "tcp", "host": "100.81.86.37", "port": 9001, "timeout": 5 },
+        { "name": "Prometheus", "type": "tcp", "host": "100.81.86.37", "port": 9090, "timeout": 5 },
+        { "name": "Grafana", "type": "tcp", "host": "100.81.86.37", "port": 3000, "timeout": 5 },
         { "name": "SSH", "type": "tcp", "host": "103.80.214.226", "port": 2280, "timeout": 5 }
       ]
     }

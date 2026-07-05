@@ -1,0 +1,42 @@
+# =============================================================================
+# REDI — Monitoring Exporters (Node Exporter + cAdvisor)
+# Deploy on all REDI nodes
+# =============================================================================
+
+services:
+  node-exporter:
+    image: ${NODE_EXPORTER_IMAGE:-prom/node-exporter:v1.8.2}
+    container_name: redi-node-exporter
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --web.listen-address=${MONITORING_EXPORTER_TAILSCALE_IP}:9102
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    security_opt:
+      - no-new-privileges:true
+
+  cadvisor:
+    image: ${CADVISOR_IMAGE:-gcr.io/cadvisor/cadvisor:v0.49.1}
+    container_name: redi-cadvisor
+    restart: unless-stopped
+    ports:
+      - "${MONITORING_EXPORTER_TAILSCALE_IP:-127.0.0.1}:8085:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    security_opt:
+      - no-new-privileges:true

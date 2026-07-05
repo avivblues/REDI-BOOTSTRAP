@@ -1,0 +1,292 @@
+# ============================================================
+# REDI-BOOTSTRAP — CURSOR AGENT IGNORE
+# Purpose:
+# Keep Cursor focused on active infrastructure implementation.
+# Prevent unnecessary context loading and scope expansion.
+# ============================================================
+
+
+# ============================================================
+# ARCHIVED DOCUMENTATION
+# ============================================================
+
+docs/archive/
+docs/archive/**
+
+
+# ============================================================
+# GIT INTERNAL
+# ============================================================
+
+.git/
+.git/**
+
+
+# ============================================================
+# IDE / EDITOR
+# ============================================================
+
+.vscode/
+.idea/
+
+*.swp
+*.swo
+*.tmp
+
+
+# ============================================================
+# OS FILES
+# ============================================================
+
+.DS_Store
+Thumbs.db
+
+
+# ============================================================
+# LOGS
+# ============================================================
+
+logs/
+**/logs/
+
+*.log
+*.log.*
+
+
+# ============================================================
+# BACKUP DATA
+# ============================================================
+
+backup/
+backups/
+
+**/backup/
+**/backups/
+
+*.bak
+*.backup
+*.dump
+*.sql
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+
+# ============================================================
+# RUNTIME DATA
+# ============================================================
+
+data/
+**/data/
+
+runtime/
+**/runtime/
+
+tmp/
+**/tmp/
+
+temp/
+**/temp/
+
+
+# ============================================================
+# DATABASE RUNTIME FILES
+# ============================================================
+
+postgres-data/
+redis-data/
+minio-data/
+
+**/postgres-data/
+**/redis-data/
+**/minio-data/
+
+
+# ============================================================
+# SECRETS
+# ============================================================
+
+.env
+.env.*
+!.env.example
+!*.env.example
+
+secrets/
+**/secrets/
+
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+credentials/
+**/credentials/
+
+
+# ============================================================
+# ACME / CERTIFICATE RUNTIME DATA
+# ============================================================
+
+acme.json
+**/acme.json
+
+certificates/
+**/certificates/
+
+
+# ============================================================
+# NODE / JAVASCRIPT
+# ============================================================
+
+node_modules/
+**/node_modules/
+
+dist/
+**/dist/
+
+build/
+**/build/
+
+.cache/
+**/.cache/
+
+
+# ============================================================
+# PYTHON
+# ============================================================
+
+__pycache__/
+**/__pycache__/
+
+*.pyc
+*.pyo
+
+.venv/
+venv/
+
+
+# ============================================================
+# TERRAFORM
+# ============================================================
+
+.terraform/
+**/.terraform/
+
+*.tfstate
+*.tfstate.*
+
+
+# ============================================================
+# GENERATED / VENDOR FILES
+# ============================================================
+
+vendor/
+**/vendor/
+
+generated/
+**/generated/
+
+
+# ============================================================
+# REPORTS
+#
+# README.md is REDI Cloud Platform Source of Truth.
+# Historical reports should not consume Cursor context.
+# ============================================================
+
+*_REPORT.md
+*_report.md
+
+reports/
+docs/reports/
+
+
+# ============================================================
+# SCREENSHOTS / MEDIA
+# ============================================================
+
+screenshots/
+images/
+
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+
+
+# ============================================================
+# LARGE / BINARY FILES
+# ============================================================
+
+*.iso
+*.img
+*.qcow2
+*.vmdk
+*.ova
+
+
+# ============================================================
+# TEST OUTPUT / COVERAGE
+# ============================================================
+
+coverage/
+**/coverage/
+
+test-results/
+**/test-results/
+
+
+# ============================================================
+# TEMPORARY AGENT OUTPUT
+# ============================================================
+
+.cursor/tmp/
+.cursor/cache/
+
+agent-output/
+ai-output/
+
+
+# ============================================================
+# REDI DEVELOPMENT AGENT SCOPE CONTROL
+# ============================================================
+
+# Historical architecture
+docs/archive/**
+
+# Historical implementation reports
+reports/**
+docs/reports/**
+
+# Runtime infrastructure data
+data/**
+backup/**
+backups/**
+logs/**
+
+# Generated artifacts
+generated/**
+
+# ============================================================
+# IMPORTANT
+#
+# CURSOR SHOULD PRIMARILY READ:
+#
+# README.md
+# compose/
+# config/
+# scripts/
+#
+# For GeoDNS task specifically:
+#
+# config/powerdns/
+# compose/powerdns/
+# scripts related to PowerDNS / DNS / GeoDNS
+#
+# Cursor MUST inspect other active files only when required
+# by the current task.
+# ============================================================

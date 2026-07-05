@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # REDI — Upload PostgreSQL WAL archive files to MinIO (redi-pg-wal bucket)
+# Runs on any Patroni node; syncs only when local node is cluster leader.
 # =============================================================================
 set -euo pipefail
 
@@ -12,10 +13,20 @@ ENV_FILE="${REDI_ROOT}/compose/shared-platform/.env"
 # shellcheck source=/dev/null
 source "${ENV_FILE}"
 
-WAL_DIR="${SHARED_DATA_PATH}/postgres-wal-archive"
+WAL_DIR="${SHARED_DATA_PATH}/postgres/wal_archive"
 BUCKET="redi-pg-wal"
 ENDPOINT="http://${MJK_MESH_IP}:9000"
 MARKER_DIR="${REDI_ROOT}/data/shared-platform/.wal-synced"
+
+patroni_role() {
+  curl -sf --max-time 5 "http://127.0.0.1:8008/patroni" 2>/dev/null \
+    | grep -o '"role": "[^"]*"' | head -1 | cut -d'"' -f4 || echo "unknown"
+}
+
+ROLE="$(patroni_role)"
+if [[ "${ROLE}" != "master" && "${ROLE}" != "leader" ]]; then
+  exit 0
+fi
 
 [[ -d "${WAL_DIR}" ]] || exit 0
 mkdir -p "${MARKER_DIR}"
@@ -37,4 +48,4 @@ docker run --rm --network host \
     done
   "
 
-log_info "WAL sync: $(ls -1 "${MARKER_DIR}" 2>/dev/null | wc -l | tr -d ' ') files tracked"
+log_info "WAL sync (${ROLE}@$(hostname -s)): $(ls -1 "${MARKER_DIR}" 2>/dev/null | wc -l | tr -d ' ') files tracked"

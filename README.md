@@ -2682,7 +2682,7 @@ Identity data MUST use Shared Platform services.
 | Authentik HA | Operational (3 backends; SBY stable — Redis HAProxy lifecycle fix) |
 | Failover Validation | Operational (mjk stop, auth + GitLab via jkt/sby) |
 | GitLab SSO | Operational (`Sign in with Authentik`, OIDC authorize → login flow) |
-| Portainer SSO | Deferred to Phase 6 |
+| Portainer SSO | Operational (Authentik OAuth — `redi-portainer`; local admin preserved) |
 | Backup / Restore | Operational (`backup-authentik.sh`, restore drill passed) |
 
 ---
@@ -2952,12 +2952,13 @@ Portainer MUST NOT be exposed directly to the public Internet.
 
 | Requirement | Current State |
 |---|---|
-| Portainer Platform | Target / Existing Deployment Validation Required |
-| Jakarta Agent | Target |
-| Mojokerto Management | Target |
-| Surabaya Agent | Target |
-| Private Mesh Access | Target |
-| Public Exposure Blocked | Target |
+| Portainer Platform | Operational (`redi-mjk-01`, CE 2.27.3) |
+| Jakarta Agent | Operational (`100.79.82.92:9001`) |
+| Mojokerto Management | Operational (server + local agent) |
+| Surabaya Agent | Operational (`100.67.138.25:9001`) |
+| Private Mesh Access | Operational (mesh-bound ports; DNS → mesh IP) |
+| Public Exposure Blocked | Operational (public IP `:9443` blocked; Traefik `internal-only`) |
+| Authentik SSO | Operational (`configure-portainer-sso.sh`; local admin preserved) |
 
 ---
 
@@ -3009,37 +3010,38 @@ Portainer MUST NOT be exposed directly to the public Internet.
 
 ### Service Health
 
-- [ ] Portainer Server healthy.
-- [ ] Jakarta Agent healthy.
-- [ ] Mojokerto environment healthy.
-- [ ] Surabaya Agent healthy.
+- [x] Portainer Server healthy.
+- [x] Jakarta Agent healthy.
+- [x] Mojokerto environment healthy.
+- [x] Surabaya Agent healthy.
 
 ### Connectivity
 
-- [ ] Jakarta environment connected.
-- [ ] Mojokerto environment connected.
-- [ ] Surabaya environment connected.
-- [ ] Agent traffic uses Private Mesh Network.
-- [ ] Management traffic uses Private Mesh Network.
+- [x] Jakarta environment connected.
+- [x] Mojokerto environment connected.
+- [x] Surabaya environment connected.
+- [x] Agent traffic uses Private Mesh Network.
+- [x] Management traffic uses Private Mesh Network.
 
 ### Functional
 
-- [ ] Docker containers visible.
-- [ ] Docker images visible.
-- [ ] Docker networks visible.
-- [ ] Docker volumes visible.
-- [ ] Docker stacks visible.
-- [ ] Container logs accessible.
-- [ ] Container restart functional.
-- [ ] Stack management functional.
+- [x] Docker containers visible.
+- [x] Docker images visible.
+- [x] Docker networks visible.
+- [x] Docker volumes visible.
+- [x] Docker stacks visible (compose-managed stacks on nodes).
+- [x] Container logs accessible.
+- [x] Container restart functional.
+- [x] Stack management functional where applicable.
 
 ### Security
 
-- [ ] Public management access blocked.
-- [ ] Administrative authentication enabled.
-- [ ] Administrative access restricted.
-- [ ] Agent ports protected.
-- [ ] Private Mesh connectivity validated.
+- [x] Public management access blocked.
+- [x] Administrative authentication enabled.
+- [x] Administrative access restricted.
+- [x] Agent ports protected.
+- [x] Private Mesh connectivity validated.
+- [x] Authentik SSO configured (local admin preserved).
 
 ---
 
@@ -3478,17 +3480,17 @@ Monitoring priorities:
 
 ### Verification
 
-- [ ] PowerDNS healthy.
-- [ ] DNS HA healthy.
-- [ ] Traefik healthy.
-- [ ] Public domains resolve.
-- [ ] HTTPS operational.
-- [ ] TLS valid.
-- [ ] Load balancing operational.
+- [x] PowerDNS healthy (NS1 + NS2).
+- [x] DNS HA healthy (MariaDB replication; `fix-pdns-replica-sync.sh` for drift).
+- [x] Traefik healthy (JKT + SBY edges).
+- [x] GeoDNS validated (`103.80.214.165` ECS → SBY; both NS1/NS2 consistent).
+- [x] Public domains resolve (`git`, `registry`, `auth` → SBY edge for Jawa Timur).
+- [x] HTTPS operational via SBY edge (GitLab 302, Registry 200, Authentik 302).
+- [ ] Health-aware GeoDNS fallback (SBY down → MJK → JKT) — not implemented.
 
 ### Definition of Done
 
-- Network, DNS, and Traffic Platform operational.
+- Network, DNS, and Traffic Platform operational. GeoDNS hotfix applied (2026-07-05).
 
 ---
 
@@ -3625,25 +3627,26 @@ Monitoring priorities:
 
 ### Implementation
 
-- Deploy Portainer.
-- Connect Jakarta.
-- Connect Mojokerto.
-- Connect Surabaya.
-- Restrict public access.
-- Validate centralized management.
+- Validate Portainer Server on `redi-mjk-01` (CE 2.27.3).
+- Validate agents on Jakarta, Mojokerto, Surabaya (mesh-bound `:9001`).
+- Confirm three environments connected in Portainer.
+- Harden access (mesh-only port binding; `portainer.letsredi.com` → mesh IP; Traefik `internal-only`).
+- Configure Authentik SSO (`scripts/deploy/configure-portainer-sso.sh`; preserves local admin).
+- Validate centralized management (`scripts/deploy/validate-portainer.sh`).
 
 ### Verification
 
-- [ ] Portainer healthy.
-- [ ] Jakarta connected.
-- [ ] Mojokerto connected.
-- [ ] Surabaya connected.
-- [ ] Docker management operational.
-- [ ] Public management access blocked.
+- [x] Portainer healthy.
+- [x] Jakarta connected (`redi-jkt-01`, 20 containers visible).
+- [x] Mojokerto connected (`redi-mjk-01`, 16 containers visible).
+- [x] Surabaya connected (`redi-sby-01`, 17 containers visible).
+- [x] Docker management operational (container inspect + restart validated on SBY).
+- [x] Public management access blocked (public IP `:9443` unreachable).
+- [x] Authentik SSO configured (`redi-portainer` OIDC; discovery 200; local admin preserved).
 
 ### Definition of Done
 
-- Management Platform operational.
+- Management Platform production-ready. **Phase 6 COMPLETE** (2026-07-05).
 
 ---
 
@@ -3658,31 +3661,29 @@ Monitoring priorities:
 
 ### Implementation
 
-- Deploy Prometheus.
-- Deploy Grafana.
-- Deploy Alertmanager.
-- Deploy Node Exporter.
-- Deploy cAdvisor.
-- Deploy Blackbox Exporter.
-- Configure dashboards.
-- Configure alert rules.
-- Configure public URL monitoring.
+- Deploy Prometheus, Grafana, Alertmanager, Blackbox Exporter on `redi-mjk-01` (`compose/monitoring`).
+- Deploy Node Exporter + cAdvisor on all three nodes (`compose/monitoring-exporter`).
+- Configure scrape targets, alert rules, and Grafana dashboards (`config/monitoring/`).
+- Expose Grafana via Traefik edge (`config/traefik/dynamic/monitoring.yml` → mesh `:3000`).
+- Route status dashboard via Traefik file provider (`config/traefik/dynamic/landing.yml`).
+- Update DNS: `grafana.letsredi.com`, `prometheus.letsredi.com`, `status.letsredi.com` → JKT edge (`scripts/deploy/update-dns-monitoring.sh` on JKT).
+- Validate (`scripts/deploy/validate-monitoring.sh` on MJK).
 
 ### Verification
 
-- [ ] Prometheus healthy.
-- [ ] `https://grafana.letsredi.com` healthy.
-- [ ] `https://status.letsredi.com` healthy.
-- [ ] Three nodes monitored.
-- [ ] Docker monitored.
-- [ ] Shared Data Platform monitored.
-- [ ] Platform services monitored.
-- [ ] Public URLs monitored.
-- [ ] Alert delivery validated.
+- [x] Prometheus healthy.
+- [x] `https://grafana.letsredi.com` healthy.
+- [x] `https://status.letsredi.com` healthy.
+- [x] Three nodes monitored (node-exporter + cAdvisor scraped).
+- [x] Docker monitored (cAdvisor on JKT/MJK/SBY).
+- [x] Shared Data Platform monitored (PostgreSQL/Redis/MinIO TCP probes).
+- [x] Platform services monitored (GitLab/Portainer TCP probes).
+- [x] Public URLs monitored (Blackbox HTTP probes).
+- [x] Alert delivery validated (Alertmanager pipeline + `MonitoringWatchdog`).
 
 ### Definition of Done
 
-- Monitoring Platform operational.
+- Monitoring Platform operational. **Phase 7 COMPLETE** (2026-07-05).
 
 ---
 
@@ -3753,9 +3754,9 @@ Monitoring priorities:
 
 ## Management
 
-- [ ] Portainer operational.
-- [ ] Three Docker environments connected.
-- [ ] Management traffic protected.
+- [x] Portainer operational.
+- [x] Three Docker environments connected.
+- [x] Management traffic protected.
 
 ## Monitoring
 
@@ -3790,7 +3791,7 @@ Monitoring priorities:
 - [ ] PostgreSQL not publicly accessible.
 - [ ] Redis not publicly accessible.
 - [ ] MinIO backend protected.
-- [ ] Portainer not publicly exposed.
+- [x] Portainer not publicly exposed.
 - [ ] Monitoring backend protected.
 - [ ] Private Mesh Network validated.
 - [ ] Administrative access restricted.
@@ -4213,16 +4214,14 @@ Each phase MUST use one of these statuses:
 | Phase 3 | Shared Data Platform | COMPLETE |
 | Phase 4 | GitLab Platform | COMPLETE |
 | Phase 5 | Identity Platform | COMPLETE |
-| Phase 6 | Management Platform | NOT STARTED / VALIDATION REQUIRED |
-| Phase 7 | Monitoring Platform | NOT STARTED |
+| Phase 6 | Management Platform | COMPLETE |
+| Phase 7 | Monitoring Platform | COMPLETE |
 
 ---
 
 ## Current Critical Gaps
 
 - MinIO distributed durability (Sprint 3E — single-node operational).
-- Portainer three-node management validation and Portainer SSO (Phase 6).
-- Monitoring Platform deployment (Phase 7).
 - Development Readiness Gate validation.
 
 ---

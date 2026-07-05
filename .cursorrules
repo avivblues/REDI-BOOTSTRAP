@@ -1,326 +1,66 @@
-# .cursor/rules/redi-platform.mdc
+# REDI Agent Rules
 
----
-description: REDI Cloud Platform development and repository rules
-alwaysApply: true
----
+## Source of Truth
 
-# REDI Cloud Platform Rules
+1. README.md
+2. Current task prompt
+3. Active repository files
+4. Actual running infrastructure
 
-## Repository Context
+Never use docs/archive/ as source of truth.
 
-Repository:
+## Context Efficiency
 
-`avivblues/REDI-BOOTSTRAP`
+- Read only files directly related to the current task.
+- Never scan the entire repository unless explicitly requested.
+- Never reread files already inspected unless they changed.
+- Use targeted search before opening files.
+- Do not load historical reports unless explicitly required.
+- Do not inspect completed phases unless a regression is proven.
 
-Primary documentation:
-
-`README.md`
-
-README.md is the primary source of truth for REDI Cloud Platform architecture, implementation targets, verification goals, and Definition of Done.
-
----
-
-## Context Rules
-
-Before executing any task:
-
-1. Read `README.md`.
-2. Read only files directly relevant to the current task.
-3. Inspect current implementation before making changes.
-4. Follow architecture decisions defined in `README.md`.
-5. Do not redesign approved architecture.
-6. Do not change technology choices without explicit CTO approval.
-
----
-
-## Excluded Context
-
-NEVER read, search, analyze, index, summarize, or use files under:
-
-`docs/archive/**`
-
-Ignore all historical documents inside:
-
-`docs/archive/`
-
-Archived documents are obsolete and MUST NOT be used as:
-
-- Architecture references
-- Implementation references
-- Deployment references
-- Configuration references
-- Decision references
-- Validation references
-- Source of truth
-
-If information conflicts between `README.md` and another document:
-
-`README.md` ALWAYS wins.
-
----
-
-## Documentation Priority
-
-Use documentation in this order:
-
-1. `README.md`
-2. Current source code
-3. Current Docker Compose files
-4. Current configuration
-5. Current deployment scripts
-6. Current validation scripts
-7. Active documentation outside `docs/archive/`
-
-NEVER use & read `docs/archive/`.
-
----
-
-## Development Scope
-
-Current REDI Cloud Platform scope:
-
-- Infrastructure
-- Private Mesh Network
-- Security
-- Docker
-- NetBird
-- Traefik
-- Portainer
-- Shared PostgreSQL
-- Shared Redis
-- Shared MinIO
-- PowerDNS HA
-- GitLab EE HA
-- Container Registry
-- Authentik
-- Backup
-- Disaster Recovery
-- Monitoring Platform
-
-Do NOT implement:
-
-- Workflow Platform
-- Knowledge Platform
-- AI Platform
-- ERP
-- REDI OS Applications
-- Kubernetes
-
-until explicitly approved.
-
----
-
-## Infrastructure Nodes
-
-| Node | Location |
-|---|---|
-| `redi-jkt-01` | Jakarta |
-| `redi-mjk-01` | Mojokerto |
-| `redi-sby-01` | Surabaya |
-
-All nodes MUST communicate through the NetBird/WireGuard Private Mesh Network for backend, replication, management, backup, and cluster traffic.
-
----
-
-## Architecture Principles
-
-Follow these priorities:
-
-1. Data Integrity
-2. High Availability
-3. Disaster Recovery
-4. Operational Simplicity
-5. Scalability
-
-Primary objective:
-
-`NO TRANSACTION LOSS`
-
-High Availability MUST NOT sacrifice data integrity.
-
-Do not introduce unnecessary infrastructure complexity.
-
----
-
-## Shared Platform Rules
-
-Applications MUST use:
-
-- Shared PostgreSQL
-- Shared Redis
-- Shared MinIO
-
-Applications MUST NOT deploy embedded PostgreSQL, Redis, or MinIO when shared services are available.
-
----
-
-## Public Access Rules
-
-Public services MUST use:
-
-`Internet -> Traefik -> Application`
-
-Public services MUST use:
-
-- HTTPS
-- Valid TLS
-- Controlled firewall rules
-
----
-
-## Internal Access Rules
-
-Internal services MUST NOT be directly exposed to the public Internet.
-
-Internal communication MUST use:
-
-- NetBird/WireGuard Private Mesh Network
-- Docker Internal Network
-
-Internal services include:
-
-- PostgreSQL
-- Redis
-- MinIO backend
-- Replication traffic
-- Traefik Dashboard
-- Portainer
-- Cluster management
-
----
-
-## Implementation Rules
-
-For every task:
-
-1. Inspect current state.
-2. Compare current state with `README.md`.
-3. Identify only the actual gap.
-4. Implement the missing requirement.
-5. Preserve working services.
-6. Do not destroy persistent data.
-7. Do not recreate working infrastructure unnecessarily.
-8. Validate implementation.
-9. Test service health.
-10. Test required domains.
-11. Test required endpoints.
-12. Update `README.md` status when implementation changes.
-13. Stop when the requested task is complete.
-
----
-
-## Execution Rules
-
-Do NOT:
-
-- Generate excessive planning.
-- Generate unnecessary reports.
-- Create new architecture documents.
-- Create duplicate documentation.
-- Repeat completed work.
-- Redesign approved architecture.
-- Add new platforms without approval.
-- Execute unrelated tasks.
-- Continue to another phase automatically.
-
-DO:
+## Execution
 
 - Inspect.
-- Implement.
-- Verify.
-- Update README.md.
-- Report concise results.
+- Identify root cause.
+- Apply minimum fix.
+- Validate.
+- Update README.md if required.
 - Stop.
 
----
+## Scope Control
 
-## Documentation Rules
+- Do not expand scope.
+- Do not redesign working architecture.
+- Do not add software unless explicitly approved.
+- Do not create reports.
+- Do not create new documentation files.
+- Prefer modifying existing scripts over creating new scripts.
+- Preserve working infrastructure.
 
-Do NOT create new report files unless explicitly requested.
+## Conversation Efficiency
 
-Do NOT create files such as:
+- Do not repeat the task description.
+- Do not repeat architecture already documented in README.md.
+- Do not provide long progress narration.
+- Do not explain every command before execution.
+- Use background terminals only when necessary.
+- Do not repeatedly poll long-running tasks in conversation.
+- Wait for task completion, then report results.
+- Keep intermediate responses under 10 lines.
+- Final output must contain only:
+  - Status
+  - Root Cause
+  - Changes Made
+  - Validation
+  - Remaining Blockers
+  - Next Move
 
-- `*_REPORT.md`
-- `*_SUMMARY.md`
-- `*_ANALYSIS.md`
-- `*_REVIEW.md`
+## Task Completion
 
-Update existing documentation whenever possible.
+When Definition of Done is met:
 
-Primary documentation:
+1. Update README.md if required.
+2. Return final result.
+3. STOP.
 
-`README.md`
-
-Operational documentation MAY use:
-
-- `docs/architecture.md`
-- `docs/installation.md`
-- `docs/backup.md`
-- `docs/restore.md`
-- `docs/upgrade.md`
-- `docs/runbooks/`
-
-Do NOT use:
-
-`docs/archive/`
-
----
-
-## README Update Rules
-
-README.md MUST contain the approved platform architecture.
-
-Every major platform section MUST contain:
-
-- Purpose
-- Technology
-- Domain
-- Endpoint where applicable
-- Current State
-- Target
-- Implementation
-- Verification
-- Definition of Done
-
-Every implementation phase MUST contain:
-
-- Objective
-- Deliverables
-- Target
-- Implementation
-- Verification
-- Completion Criteria
-
-Every verification MUST validate:
-
-- Service Health
-- Domain or Endpoint
-- Functional Operation
-- High Availability where applicable
-- Data Integrity where applicable
-
----
-
-## Task Completion Format
-
-Return only:
-
-```text
-Task:
-Status:
-
-Implemented:
-- ...
-
-Verification:
-- ...
-
-README.md:
-- Updated / No Update Required
-
-Blockers:
-- None / ...
-
-Decision:
-PASS / PASS WITH WARNINGS / FAIL
+Never automatically continue to the next phase.

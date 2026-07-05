@@ -20,22 +20,7 @@ services:
       - ${LANDING_CONFIG_PATH}/services.json:/app/config/services.json:ro
       - ${LANDING_CONFIG_PATH}/static:/app/static:ro
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=redi-proxy"
-      # HTTPS
-      - "traefik.http.routers.redi-landing.rule=Host(`letsredi.com`) || Host(`www.letsredi.com`) || Host(`status.letsredi.com`)"
-      - "traefik.http.routers.redi-landing.entrypoints=websecure"
-      - "traefik.http.routers.redi-landing.tls=true"
-      - "traefik.http.routers.redi-landing.tls.certresolver=letsencrypt-http"
-      - "traefik.http.routers.redi-landing.tls.domains[0].main=letsredi.com"
-      - "traefik.http.routers.redi-landing.tls.domains[0].sans=www.letsredi.com"
-      # HTTP (works while ACME provisions or as fallback)
-      - "traefik.http.routers.redi-landing-http.rule=Host(`letsredi.com`) || Host(`www.letsredi.com`) || Host(`status.letsredi.com`)"
-      - "traefik.http.routers.redi-landing-http.entrypoints=web"
-      - "traefik.http.routers.redi-landing-http.service=redi-landing"
-      - "traefik.http.routers.redi-landing.middlewares=security-headers@file"
-      - "traefik.http.routers.redi-landing.service=redi-landing"
-      - "traefik.http.services.redi-landing.loadbalancer.server.port=8080"
+      - "traefik.enable=false"
     security_opt:
       - no-new-privileges:true
     logging:
